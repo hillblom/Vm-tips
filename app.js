@@ -177,16 +177,28 @@ function renderMatches(matchesToRender) {
         }
 
         const dateObj = new Date(match.utcDate);
-        const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}\n${dateObj.toLocaleTimeString("sv-SE", {hour: '2-digit', minute:'2-digit'})}`;
+        const dayMonth = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+        const timeStr = dateObj.toLocaleTimeString("sv-SE", {hour: '2-digit', minute:'2-digit'});
         const tvHtml = getBroadcasterHtml(match);
 
+        // Här bygger vi en ren och stabil HTML-struktur inuti cellen för att tvinga fram loggan
         row.innerHTML = `
-        <td style="white-space: pre-line; vertical-align: middle;">${dateStr}${tvHtml}</td>
-        <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
-        <td>${scoreStr}</td>
-        <td>${prediction}</td>
-        <td>${points}</td>
-        <td>${getStatusSE(match.status)}</td>
+        <td style="vertical-align: middle; padding: 4px 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.2;">
+                    <div>${dayMonth}</div>
+                    <div>${timeStr}</div>
+                </div>
+                <div style="display: flex; align-items: center; width: 35px; justify-content: center;">
+                    ${tvHtml}
+                </div>
+            </div>
+        </td>
+        <td style="vertical-align: middle;">${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
+        <td style="vertical-align: middle;">${scoreStr}</td>
+        <td style="vertical-align: middle;">${prediction}</td>
+        <td style="vertical-align: middle;">${points}</td>
+        <td style="vertical-align: middle;">${getStatusSE(match.status)}</td>
         `;
         tbody.appendChild(row);
     });
