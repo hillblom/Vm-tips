@@ -5,21 +5,29 @@ let allMatches = [];
 let currentUser = "";
 
 async function loadPredictions() {
-    // Ändrat till "predictions.json" utan ./ för bättre kompatibilitet med GitHub
-    const response = await fetch("predictions.json");
-    allPredictions = await response.json();
-    
-    const users = Object.keys(allPredictions);
-    currentUser = users[0];
-    
-    const selector = document.getElementById("user-selector");
-    selector.innerHTML = "";
-    users.forEach(user => {
-        const option = document.createElement("option");
-        option.value = user;
-        option.innerText = user;
-        selector.appendChild(option);
-    });
+    try {
+        const response = await fetch("predictions.json");
+        if (!response.ok) throw new Error(`Kunde inte hämta predictions.json (Status ${response.status})`);
+        
+        allPredictions = await response.json();
+        
+        const users = Object.keys(allPredictions);
+        if (users.length === 0) throw new Error("predictions.json är tom eller saknar användare");
+        
+        currentUser = users[0];
+        
+        const selector = document.getElementById("user-selector");
+        selector.innerHTML = "";
+        users.forEach(user => {
+            const option = document.createElement("option");
+            option.value = user;
+            option.innerText = user;
+            selector.appendChild(option);
+        });
+    } catch (error) {
+        document.getElementById("lastUpdated").innerText = `Tips-fel: ${error.message}`;
+        console.error(error);
+    }
 }
 
 function getOutcome(home, away) {
@@ -159,4 +167,76 @@ function renderRanking() {
 }
 
 async function loadMatches(){
-    const response = await
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`API-status ${response.status}`);
+        
+        const data = await response.json();
+        allMatches = data.matches || [];
+        
+        filterMatches();
+        renderRanking();
+
+        document.getElementById("lastUpdated").innerText = 
+            `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
+    } catch (error) {
+        document.getElementById("lastUpdated").innerText = `Match-fel: ${error.message}`;
+        console.error(error);
+    }
+}
+
+function filterMatches() {
+    if (!allMatches || allMatches.length === 0) return;
+    const query = document.getElementById("search").value.toLowerCase();
+    const filtered = allMatches.filter(match => 
+        match.stage === "GROUP_STAGE" && (
+            match.homeTeam.name.toLowerCase().includes(query) || 
+            match.awayTeam.name.toLowerCase().includes(query)
+        )
+    );
+    renderMatches(filtered);
+}
+
+function setupTabs() {
+    const btnMatches = document.getElementById("btn-matches");
+    const btnRanking = document.getElementById("btn-ranking");
+    const viewMatches = document.getElementById("view-matches");
+    const viewRanking = document.getElementById("view-ranking");
+
+    btnMatches.addEventListener("click", () => {
+        btnMatches.classList.add("active");
+        btnRanking.classList.remove("active");
+        viewMatches.classList.remove("hidden");
+        viewRanking.classList.add("hidden");
+    });
+
+    btnRanking.addEventListener("click", () => {
+        btnRanking.classList.add("active");
+        btnMatches.classList.remove("active");
+        viewRanking.classList.remove("hidden");
+        viewMatches.classList.add("hidden");
+        renderRanking();
+    });
+}
+
+async function start(){
+    setupTabs();
+    
+    // Körs parallellt istället för sekventiellt så att ett fel inte sänker hela skriptet
+    await loadPredictions();
+    await loadMatches();
+
+    document.getElementById("search").addEventListener("input", filterMatches);
+    
+    const selector = document.getElementById("user-selector");
+    if (selector) {
+        selector.addEventListener("change", (e) => {
+            currentUser = e.target.value;
+            filterMatches();
+        });
+    }
+
+    setInterval(loadMatches, 30000);
+}
+
+start();
