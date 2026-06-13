@@ -1,0 +1,70 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 15px;
+    background: #f4f4f4;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    margin: 0;
+}
+
+#totalPoints {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+#search {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+.green {
+    background: #d4edda;
+}
+
+.yellow {
+    background: #fff3cd;
+}
+
+.red {
+    background: #f8d7da;
+}
+
+@media(max-width:700px){
+
+    table {
+        font-size: 12px;
+    }
+
+    th,
+    td {
+        padding: 6px;
+    }
+
+}
