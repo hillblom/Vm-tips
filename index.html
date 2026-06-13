@@ -10,37 +10,57 @@
 
 <header>
     <h1>⚽ VM-Tipset 2026</h1>
-    <div id="totalPoints">Poäng: 0</div>
+    <nav class="menu">
+        <button id="btn-matches" class="active">Matcher</button>
+        <button id="btn-ranking">Rankinglista</button>
+    </nav>
     <div id="lastUpdated"></div>
 </header>
 
 <main>
 
-<input
-    type="text"
-    id="search"
-    placeholder="Sök lag..."
->
+    <section id="view-matches">
+        <div class="filter-bar">
+            <select id="user-selector">
+                </select>
+            <input type="text" id="search" placeholder="Sök lag...">
+        </div>
 
-<div class="table-wrapper">
-<table>
-    <thead>
-        <tr>
-            <th>Datum</th>
-            <th>Match</th>
-            <th>Resultat</th>
-            <th>Mitt tips</th>
-            <th>Poäng</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody id="matches"></tbody>
-</table>
-</div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Match</th>
+                        <th>Resultat</th>
+                        <th>Tips</th>
+                        <th>Poäng</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="matches"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="view-ranking" class="hidden">
+        <h2>🏆 Aktuell Ställning</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Placering</th>
+                        <th>Namn</th>
+                        <th>Total Poäng</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-list"></tbody>
+            </table>
+        </div>
+    </section>
 
 </main>
 
 <script src="app.js"></script>
-
 </body>
 </html>
