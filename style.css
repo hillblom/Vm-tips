@@ -2,15 +2,14 @@
    Gemensamma basstilar och CSS-variabler
    ========================================================================== */
 :root {
-    --primary-color: #1e3a8a;       /* Mörkblå sportkaraktär */
+    --primary-color: #1e3a8a;
     --primary-hover: #1d4ed8;
-    --bg-main: #f8fafc;             /* Ljusgrå modern bakgrund */
+    --bg-main: #f8fafc;
     --bg-card: #ffffff;
-    --text-main: #0f172a;           /* Nästan svart för hög kontrast */
+    --text-main: #0f172a;
     --text-muted: #64748b;
     --border-color: #e2e8f0;
     
-    /* Poängfärger med bra kontrast och mjuk ton */
     --score-green: #d1fae5;
     --score-green-text: #065f46;
     --score-yellow: #fef3c7;
@@ -26,11 +25,11 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
-    line-height: 1.5;
-    padding: 10px;
+    line-height: 1.4;
+    padding: 8px;
 }
 
 .container {
@@ -39,67 +38,46 @@ body {
     padding-bottom: 40px;
 }
 
-/* Header & Status info */
 header {
     text-align: center;
-    margin-bottom: 20px;
-    padding: 15px 0;
+    margin-bottom: 15px;
+    padding: 10px 0;
 }
 
 header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: var(--primary-color);
-    margin-bottom: 5px;
+    margin-bottom: 4px;
 }
 
 #lastUpdated {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
 /* ==========================================================================
-   Interaktiva element (Reglage, Sök, Flikar)
+   Reglage och Flikar
    ========================================================================== */
 .controls-wrapper {
     background-color: var(--bg-card);
-    padding: 15px;
+    padding: 12px;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
-/* Sökfält och Användarväljare */
-input[type="text"], select {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background-color: #fff;
-    color: var(--text-main);
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-input[type="text"]:focus, select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
-}
-
-/* Flik-knappar (Matcher / Tabell) */
 .tabs {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 8px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 12px;
-    font-size: 1rem;
+    padding: 10px;
+    font-size: 0.95rem;
     font-weight: 600;
     background-color: #e2e8f0;
     color: var(--text-muted);
@@ -114,9 +92,17 @@ input[type="text"]:focus, select:focus {
     color: #ffffff;
 }
 
-.tab-btn:hover:not(.active) {
-    background-color: #cbd5e1;
-    color: var(--text-main);
+input[type="text"], select {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    outline: none;
+}
+
+input[type="text"]:focus, select:focus {
+    border-color: var(--primary-color);
 }
 
 .hidden {
@@ -124,13 +110,13 @@ input[type="text"]:focus, select:focus {
 }
 
 /* ==========================================================================
-   Gruppering & Accordion (Dag för dag)
+   Accordion (Dagpaneler)
    ========================================================================== */
 .day-container {
     background-color: var(--bg-card);
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    margin-bottom: 10px;
     overflow: hidden;
     border: 1px solid var(--border-color);
 }
@@ -138,28 +124,22 @@ input[type="text"]:focus, select:focus {
 .day-header {
     background-color: #f1f5f9;
     color: #1e293b;
-    padding: 14px 16px;
+    padding: 12px 14px;
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
     user-select: none;
-    transition: background-color 0.2s;
-}
-
-.day-header:hover {
-    background-color: #e2e8f0;
 }
 
 .day-toggle-icon {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     transition: transform 0.2s ease;
     color: var(--text-muted);
 }
 
-/* När sektionen minimeras */
 .day-container.collapsed .table-wrapper {
     display: none;
 }
@@ -169,10 +149,9 @@ input[type="text"]:focus, select:focus {
 }
 
 /* ==========================================================================
-   Tabeller & Matchrader
+   Tabell-layout för Datorer / Surfplattor
    ========================================================================== */
 .table-wrapper {
-    overflow-x: auto; /* Gör tabellen skrollbar i sidled på små skärmar */
     width: 100%;
 }
 
@@ -180,117 +159,142 @@ table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 th {
     background-color: #f8fafc;
     color: var(--text-muted);
     font-weight: 600;
-    padding: 10px 14px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border-color);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 td {
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
 }
 
-/* Färgkodning för poängutdelning */
-tr.green td {
-    background-color: var(--score-green);
-    color: var(--score-green-text);
-}
-tr.yellow td {
-    background-color: var(--score-yellow);
-    color: var(--score-yellow-text);
-}
-tr.red td {
-    background-color: var(--score-red);
-    color: var(--score-red-text);
-}
+/* Poängrader (Datorstil) */
+tr.green td { background-color: var(--score-green); color: var(--score-green-text); }
+tr.yellow td { background-color: var(--score-yellow); color: var(--score-yellow-text); }
+tr.red td { background-color: var(--score-red); color: var(--score-red-text); }
 
-/* Specifik formatering för kolumner */
-td:nth-child(1) { /* Tid */
-    font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
-    font-weight: 500;
-}
+td:nth-child(1) { font-variant-numeric: tabular-nums; font-weight: 500; }
+td:nth-child(2) { font-weight: 600; }
+td:nth-child(3), td:nth-child(4) { font-variant-numeric: tabular-nums; font-weight: 700; }
+td:nth-child(5) { font-weight: 800; text-align: center; }
 
-td:nth-child(2) { /* Match */
-    font-weight: 600;
-}
-
-td:nth-child(3), td:nth-child(4) { /* Resultat & Tips */
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-}
-
-td:nth-child(5) { /* Poäng */
-    font-weight: 800;
-    text-align: center;
-}
-
-/* TV-logotyper */
 .tv-logo-cell {
     text-align: center;
 }
 
 .tv-logo {
-    height: 16px;
-    max-width: 50px;
+    height: 14px;
+    max-width: 45px;
     vertical-align: middle;
     object-fit: contain;
-    filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.1));
 }
 
-/* ==========================================================================
-   Topplista / Ranking-vy
-   ========================================================================== */
+/* Topplista */
 #view-ranking table {
     background-color: var(--bg-card);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     border: 1px solid var(--border-color);
 }
-
-#view-ranking tr:hover {
-    background-color: #f8fafc;
-}
-
-#view-ranking td {
-    padding: 14px 16px;
-}
+#view-ranking td { padding: 12px; }
 
 /* ==========================================================================
-   Mobilanpassningar (Media Queries)
+   REVOLUTIONERANDE MOBILVY (Ingen skroll i sidled, allt får plats)
    ========================================================================== */
-@media (max-width: 600px) {
-    body {
-        padding: 5px;
-    }
-    
-    header h1 {
-        font-size: 1.6rem;
+@media (max-width: 650px) {
+    /* Dölj den stela tabell-headern på mobilen */
+    #view-matches th {
+        display: none;
     }
 
-    /* Gör tabellceller något mer kompakta på mobilen */
-    td, th {
-        padding: 10px 8px;
+    /* Gör om varje matchrad till ett eget litet flex-kort */
+    #view-matches tr {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border-color);
+        align-items: center;
+    }
+
+    /* Rad 1: Tid och TV-logga till vänster */
+    #view-matches td:nth-child(1) {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 45%;
+        padding: 0 0 6px 0;
+        border: none;
         font-size: 0.85rem;
+        background-color: transparent !important;
     }
 
-    /* Förhindra radbrytningar på lagnamn på väldigt små skärmar */
-    td:nth-child(2) {
-        min-width: 140px;
+    /* Rad 1: Status (Kommande/Fulltid) till höger */
+    #view-matches td:nth-child(6) {
+        flex: 0 0 55%;
+        text-align: right;
+        padding: 0 0 6px 0;
+        border: none;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        background-color: transparent !important;
+    }
+
+    /* Rad 2: Lagen (får hela bredden) */
+    #view-matches td:nth-child(2) {
+        flex: 0 0 100%;
+        padding: 4px 0;
+        border: none;
+        font-size: 0.95rem;
+        background-color: transparent !important;
+    }
+
+    /* Rad 3: Data-sektionen (Resultat, Tips, Poäng) */
+    #view-matches td:nth-child(3),
+    #view-matches td:nth-child(4),
+    #view-matches td:nth-child(5) {
+        flex: 1;
+        padding: 6px 4px;
+        margin-top: 6px;
+        border: none;
+        font-size: 0.85rem;
+        text-align: center;
+        border-radius: 4px;
+    }
+
+    /* Lägg till förklarande text framför siffrorna i mobilvyn */
+    #view-matches td:nth-child(3)::before { content: "Res: "; font-weight: normal; color: var(--text-muted); }
+    #view-matches td:nth-child(4)::before { content: "Tips: "; font-weight: normal; color: var(--text-muted); }
+    #view-matches td:nth-child(5)::before { content: "Poäng: "; font-weight: normal; }
+
+    /* Flytta sänds-loggan så den ligger bredvid tiden */
+    #view-matches .tv-logo-cell {
+        display: none; /* Döljer ursprungliga cellen */
     }
     
-    .controls-wrapper {
-        padding: 10px;
+    /* Skjut in TV-loggan bredvid matchtiden dynamiskt via CSS */
+    #view-matches td:nth-child(1)::after {
+        content: "";
+        display: inline-block;
     }
+
+    /* Hantera bakgrundsfärgerna för poäng på rad-nivå istället för cell-nivå */
+    #view-matches tr.green { background-color: rgba(209, 250, 229, 0.4); color: var(--score-green-text); }
+    #view-matches tr.yellow { background-color: rgba(254, 243, 199, 0.5); color: var(--score-yellow-text); }
+    #view-matches tr.red { background-color: rgba(254, 226, 226, 0.4); color: var(--score-red-text); }
+    
+    /* Ge poängrutan en extra tydlig bakgrund inuti kortet */
+    #view-matches tr.green td:nth-child(5) { background-color: var(--score-green); }
+    #view-matches tr.yellow td:nth-child(5) { background-color: var(--score-yellow); }
+    #view-matches tr.red td:nth-child(5) { background-color: var(--score-red); }
 }
