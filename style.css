@@ -24,54 +24,57 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
-    padding: 10px;
+    padding: 15px;
+    font-size: 0.9rem;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
-    padding-bottom: 40px;
+    padding-bottom: 20px;
 }
 
 header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: var(--primary-color);
 }
 
 #lastUpdated {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
+    margin-top: 2px;
 }
 
 .controls-wrapper {
     background-color: var(--bg-card);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .tabs {
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 12px;
+    padding: 8px;
     font-weight: 600;
+    font-size: 0.85rem;
     background-color: #e2e8f0;
     color: var(--text-muted);
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
 }
 
@@ -82,52 +85,62 @@ header h1 {
 
 input[type="text"], select {
     width: 100%;
-    padding: 10px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 .hidden {
     display: none !important;
 }
 
-/* Tabellstyling (Klassisk och ren layout) */
+/* Mycket mer kompakt tabellayout */
 .table-wrapper {
     overflow-x: auto;
     width: 100%;
     background-color: var(--bg-card);
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.95rem;
 }
 
 th, td {
-    padding: 12px 14px;
+    padding: 6px 10px; /* Krympt från 12px/14px för maximal kompakthet */
     border-bottom: 1px solid var(--border-color);
+    line-height: 1.3;
 }
 
 th {
     background-color: #f8fafc;
     color: var(--text-muted);
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-/* Färgkodade rader */
+/* Färgkodade rader (mjukare opacitet vid behov) */
 tr.green td { background-color: var(--score-green); color: var(--score-green-text); }
 tr.yellow td { background-color: var(--score-yellow); color: var(--score-yellow-text); }
 tr.red td { background-color: var(--score-red); color: var(--score-red-text); }
 
-td:nth-child(1) { font-weight: 500; color: var(--text-muted); }
-td:nth-child(2) { font-weight: 600; }
-td:nth-child(3), td:nth-child(4) { font-weight: 700; }
-td:nth-child(5) { font-weight: 800; text-align: center; }
+/* Fontvikter för att slippa att allt är "bold" */
+td:nth-child(1) { font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
+td:nth-child(2) { font-weight: 600; } /* Bara lagnamnen förblir tydligt markerade */
+td:nth-child(3), td:nth-child(4) { font-weight: 400; } 
+td:nth-child(5) { font-weight: 700; text-align: center; } /* Poäng syns tydligt */
+td:nth-child(6) { font-weight: 400; color: var(--text-muted); font-size: 0.85rem; }
+
+.tv-logo {
+    height: 10px;
+    margin-top: 3px;
+    display: block;
+    object-fit: contain;
+}
