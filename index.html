@@ -4,53 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VM-Tips 2026</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
 
     <div class="container">
         
         <header>
-            <h1>VM-Tips 2026</h1>
+            <h1>⚽ VM-Tipset 2026</h1>
             <div id="lastUpdated">Laddar matchdata...</div>
         </header>
 
         <div class="controls-wrapper">
             <div class="tabs">
                 <button id="btn-matches" class="tab-btn active">Matcher</button>
-                <button id="btn-ranking" class="tab-btn">Topplista</button>
+                <button id="btn-ranking" class="tab-btn">Rankinglista</button>
             </div>
 
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 200px;">
-                    <select id="user-selector">
-                        </select>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <select id="user-selector"></select>
                 </div>
-                <div style="flex: 1; min-width: 200px;">
-                    <input type="text" id="search" placeholder="Sök lag (t.ex. Sverige)...">
+                <div style="flex: 2;">
+                    <input type="text" id="search" placeholder="Sök lag...">
                 </div>
             </div>
         </div>
 
         <div id="view-matches" class="tab-content">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Datum</th>
+                            <th style="width: 40%;">Match</th>
+                            <th style="width: 12%;">Resultat</th>
+                            <th style="width: 11%;">Tips</th>
+                            <th style="width: 10%;">Poäng</th>
+                            <th style="width: 12%;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matches">
+                        </tbody>
+                </table>
             </div>
+        </div>
 
         <div id="view-ranking" class="tab-content hidden">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 60px;">#</th>
-                        <th>Deltagare</th>
-                        <th style="width: 120px;">Totalpoäng</th>
-                    </tr>
-                </thead>
-                <tbody id="ranking-list">
-                    </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Deltagare</th>
+                            <th>Totalpoäng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-list"></tbody>
+                </table>
+            </div>
         </div>
 
     </div>
 
-    <script src="app.js?v=2.4"></script>
+    <script src="app.js?v=3.0"></script>
 </body>
 </html>
