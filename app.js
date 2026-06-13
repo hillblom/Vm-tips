@@ -60,7 +60,9 @@ const teamNamesSE = {
     "Uzbekistan": "Uzbekistan"
 };
 
+// Säkrad funktion som hanterar om engName skulle vara null/undefined
 function getTeamNameSE(engName) {
+    if (!engName) return "?"; 
     return teamNamesSE[engName] || engName;
 }
 
@@ -133,6 +135,7 @@ function getUserTotalPoints(user) {
 
     allMatches.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
+        if (!match.homeTeam?.tla || !match.awayTeam?.tla) return; // Säkring
 
         const key = `${match.homeTeam.tla}-${match.awayTeam.tla}`;
         const prediction = userPredictions[key];
@@ -159,8 +162,8 @@ function renderMatches(matchesToRender) {
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
 
-        const home = match.homeTeam.tla;
-        const away = match.awayTeam.tla;
+        const home = match.homeTeam?.tla || "?";
+        const away = match.awayTeam?.tla || "?";
         const key = `${home}-${away}`;
         const prediction = userPredictions[key] || "-";
         
@@ -187,8 +190,9 @@ function renderMatches(matchesToRender) {
 
         const statusSE = getStatusSE(match.status);
         
-        const homeSE = getTeamNameSE(match.homeTeam.name);
-        const awaySE = getTeamNameSE(match.awayTeam.name);
+        // Felsäkrad hämtning av lagnamn
+        const homeSE = getTeamNameSE(match.homeTeam?.name);
+        const awaySE = getTeamNameSE(match.awayTeam?.name);
 
         row.innerHTML = `
         <td>${new Date(match.utcDate).toLocaleString("sv-SE", {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
@@ -252,8 +256,8 @@ function filterMatches() {
     if (!allMatches || allMatches.length === 0) return;
     const query = document.getElementById("search").value.toLowerCase();
     const filtered = allMatches.filter(match => {
-        const homeSE = getTeamNameSE(match.homeTeam.name).toLowerCase();
-        const awaySE = getTeamNameSE(match.awayTeam.name).toLowerCase();
+        const homeSE = getTeamNameSE(match.homeTeam?.name).toLowerCase();
+        const awaySE = getTeamNameSE(match.awayTeam?.name).toLowerCase();
         return match.stage === "GROUP_STAGE" && (
             homeSE.includes(query) || 
             awaySE.includes(query)
