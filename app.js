@@ -4,6 +4,66 @@ let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
 
+// Komplett översättningslista för alla 48 deltagande länder i gruppspelet
+const teamNamesSE = {
+    "Algeria": "Algeriet",
+    "Argentina": "Argentina",
+    "Australia": "Australien",
+    "Austria": "Österrike",
+    "Belgium": "Belgien",
+    "Bosnia and Herzegovina": "Bosnien",
+    "Bosnia-Herzegovina": "Bosnien",
+    "Brazil": "Brasilien",
+    "Canada": "Kanada",
+    "Cape Verde": "Kap Verde",
+    "Colombia": "Colombia",
+    "Croatia": "Kroatien",
+    "Curaçao": "Curacao",
+    "Curacao": "Curacao",
+    "Czech Republic": "Tjeckien",
+    "Czechia": "Tjeckien",
+    "DR Congo": "DR Kongo",
+    "Ecuador": "Ecuador",
+    "Egypt": "Egypten",
+    "El Salvador": "El Salvador",
+    "England": "England",
+    "France": "Frankrike",
+    "Germany": "Tyskland",
+    "Ghana": "Ghana",
+    "Haiti": "Haiti",
+    "Iran": "Iran",
+    "Iraq": "Irak",
+    "Ivory Coast": "Elfenbenskusten",
+    "Japan": "Japan",
+    "Jordan": "Jordanien",
+    "Mexico": "Mexiko",
+    "Morocco": "Marocko",
+    "Netherlands": "Nederländerna",
+    "New Zealand": "Nya Zeeland",
+    "Norway": "Norge",
+    "Panama": "Panama",
+    "Paraguay": "Paraguay",
+    "Portugal": "Portugal",
+    "Qatar": "Qatar",
+    "Saudi Arabia": "Saudiarabien",
+    "Scotland": "Skottland",
+    "Senegal": "Senegal",
+    "South Africa": "Sydafrika",
+    "South Korea": "Sydkorea",
+    "Spain": "Spanien",
+    "Sweden": "Sverige",
+    "Switzerland": "Schweiz",
+    "Tunisia": "Tunisien",
+    "Turkey": "Turkiet",
+    "United States": "USA",
+    "Uruguay": "Uruguay",
+    "Uzbekistan": "Uzbekistan"
+};
+
+function getTeamNameSE(engName) {
+    return teamNamesSE[engName] || engName;
+}
+
 async function loadPredictions() {
     try {
         const response = await fetch("predictions.json");
@@ -126,10 +186,13 @@ function renderMatches(matchesToRender) {
         }
 
         const statusSE = getStatusSE(match.status);
+        
+        const homeSE = getTeamNameSE(match.homeTeam.name);
+        const awaySE = getTeamNameSE(match.awayTeam.name);
 
         row.innerHTML = `
         <td>${new Date(match.utcDate).toLocaleString("sv-SE", {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
-        <td>${match.homeTeam.name} - ${match.awayTeam.name}</td>
+        <td>${homeSE} - ${awaySE}</td>
         <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
         <td>${prediction}</td>
         <td>${points}</td>
@@ -188,12 +251,14 @@ async function loadMatches(){
 function filterMatches() {
     if (!allMatches || allMatches.length === 0) return;
     const query = document.getElementById("search").value.toLowerCase();
-    const filtered = allMatches.filter(match => 
-        match.stage === "GROUP_STAGE" && (
-            match.homeTeam.name.toLowerCase().includes(query) || 
-            match.awayTeam.name.toLowerCase().includes(query)
-        )
-    );
+    const filtered = allMatches.filter(match => {
+        const homeSE = getTeamNameSE(match.homeTeam.name).toLowerCase();
+        const awaySE = getTeamNameSE(match.awayTeam.name).toLowerCase();
+        return match.stage === "GROUP_STAGE" && (
+            homeSE.includes(query) || 
+            awaySE.includes(query)
+        );
+    });
     renderMatches(filtered);
 }
 
@@ -222,7 +287,6 @@ function setupTabs() {
 async function start(){
     setupTabs();
     
-    // Körs parallellt istället för sekventiellt så att ett fel inte sänker hela skriptet
     await loadPredictions();
     await loadMatches();
 
