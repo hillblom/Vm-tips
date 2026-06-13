@@ -258,12 +258,13 @@ function renderMatches(matchesToRender) {
             const tvHtml = getBroadcasterHtml(match);
 
             row.innerHTML = `
-                <td>${matchTime}</td>
-                <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
-                <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
-                <td>${prediction}</td>
-                <td>${points}</td>
-                <td style="text-align: center;">${tvHtml}</td>
+    <td>${matchTime} <span style="margin-left:6px; display:inline-flex; align-items:center;">${tvHtml}</span></td>
+    <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
+    <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
+    <td>${prediction}</td>
+    <td>${points}</td>
+    <td class="tv-logo-cell">${tvHtml}</td>
+    <td>${getStatusSE(match.status)}</td>
             `;
             tbody.appendChild(row);
         });
