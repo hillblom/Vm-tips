@@ -183,15 +183,13 @@ function renderMatches(matchesToRender) {
         const timeStr = dateObj.toLocaleTimeString("sv-SE", {hour: '2-digit', minute:'2-digit'});
         const tvHtml = getBroadcasterHtml(match);
 
-        // Här bygger vi en ren och stabil HTML-struktur inuti cellen för att tvinga fram loggan
         row.innerHTML = `
-        <td style="vertical-align: middle; padding: 4px 10px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.2;">
-                    <div>${dayMonth}</div>
-                    <div>${timeStr}</div>
+        <td style="vertical-align: middle; padding: 6px 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; justify-content: space-between; max-width: 110px;">
+                <div style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.3; white-space: nowrap;">
+                    <div>${dayMonth} ${timeStr}</div>
                 </div>
-                <div style="display: flex; align-items: center; width: 35px; justify-content: center;">
+                <div style="display: flex; align-items: center; flex-shrink: 0;">
                     ${tvHtml}
                 </div>
             </div>
