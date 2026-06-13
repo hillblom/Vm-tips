@@ -61,6 +61,22 @@ const teamNamesSE = {
     "Uzbekistan": "Uzbekistan"
 };
 
+// Om API:et använder en landskod (TLA) som skiljer sig från din predictions.json,
+// så mappar vi om API-koden (vänster) till din JSON-kod (höger) här.
+const tlaAliases = {
+    "HAI": "HTI", // Om API:et säger HAI men du har HTI
+    "KSA": "SAU", // Om API:et säger KSA men du har SAU
+    "KOR": "KOR", // Just in case
+    "RSA": "RSA"
+};
+
+// Hjälpfunktion för att hämta rätt landskod baserat på dina alias
+function getCleanTLA(tla) {
+    if (!tla) return "?";
+    const upperTLA = tla.toUpperCase();
+    return tlaAliases[upperTLA] || upperTLA;
+}
+
 function getTeamNameSE(engName) {
     if (!engName) return "?"; 
     return teamNamesSE[engName] || engName;
@@ -137,7 +153,10 @@ function getUserTotalPoints(user) {
         if (match.stage !== "GROUP_STAGE") return;
         if (!match.homeTeam?.tla || !match.awayTeam?.tla) return;
 
-        const key = `${match.homeTeam.tla}-${match.awayTeam.tla}`;
+        // Använd korrigerade landskoder för poängräkningen
+        const home = getCleanTLA(match.homeTeam.tla);
+        const away = getCleanTLA(match.awayTeam.tla);
+        const key = `${home}-${away}`;
         const prediction = userPredictions[key];
         
         if(match.status === "FINISHED" && prediction && prediction !== "-") {
@@ -162,22 +181,17 @@ function renderMatches(matchesToRender) {
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
 
-        const home = match.homeTeam?.tla || "?";
-        const away = match.awayTeam?.tla || "?";
+        // Här kör vi landskoderna genom vår alias-tvättmaskin
+        const home = getCleanTLA(match.homeTeam?.tla);
+        const away = getCleanTLA(match.awayTeam?.tla);
         const key = `${home}-${away}`;
         
-        // FELSÖKNING: Om tipset saknas, visa förväntad nyckel istället för bara "-"
-        let prediction = userPredictions[key];
-        let isMissing = false;
-        if (!prediction) {
-            prediction = `Saknas (${key})`;
-            isMissing = true;
-        }
+        const prediction = userPredictions[key] || "-";
         
         let points = "";
         let isFinished = match.status === "FINISHED";
 
-        if(isFinished && !isMissing && prediction !== "-"){
+        if(isFinished && prediction !== "-"){
             const [pHome, pAway] = prediction.split("-").map(Number);
             points = calculatePoints(
                 match.score.fullTime.home,
@@ -189,7 +203,7 @@ function renderMatches(matchesToRender) {
 
         const row = document.createElement("tr");
 
-        if (isFinished && !isMissing && prediction !== "-") {
+        if (isFinished && prediction !== "-") {
             if(points === 12) row.classList.add("green");
             else if(points > 0) row.classList.add("yellow");
             else if(points === 0) row.classList.add("red");
@@ -204,7 +218,7 @@ function renderMatches(matchesToRender) {
         <td>${new Date(match.utcDate).toLocaleString("sv-SE", {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
         <td>${homeSE} - ${awaySE}</td>
         <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
-        <td style="${isMissing ? 'color: red; font-size: 11px;' : ''}">${prediction}</td>
+        <td>${prediction}</td>
         <td>${points}</td>
         <td>${statusSE}</td>
         `;
@@ -213,18 +227,28 @@ function renderMatches(matchesToRender) {
     });
 }
 
-// ... resten av koden (renderRanking, loadMatches, filterMatches, setupTabs, start) är oförändrad ...
 function renderRanking() {
     const tbody = document.getElementById("ranking-list");
     tbody.innerHTML = "";
+
     const ranking = Object.keys(allPredictions).map(user => {
-        return { name: user, points: getUserTotalPoints(user) };
+        return {
+            name: user,
+            points: getUserTotalPoints(user)
+        };
     });
+
     ranking.sort((a, b) => b.points - a.points);
+
     ranking.forEach((player, index) => {
         const row = document.createElement("tr");
         if(index === 0) row.style.fontWeight = "bold";
-        row.innerHTML = `<td>${index + 1}</td><td>${player.name}</td><td><strong>${player.points} p</strong></td>`;
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${player.name}</td>
+            <td><strong>${player.points} p</strong></td>
+        `;
         tbody.appendChild(row);
     });
 }
@@ -233,11 +257,15 @@ async function loadMatches(){
     try {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error(`API-status ${response.status}`);
+        
         const data = await response.json();
         allMatches = data.matches || [];
+        
         filterMatches();
         renderRanking();
-        document.getElementById("lastUpdated").innerText = `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
+
+        document.getElementById("lastUpdated").innerText = 
+            `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
     } catch (error) {
         document.getElementById("lastUpdated").innerText = `Match-fel: ${error.message}`;
     }
@@ -249,7 +277,10 @@ function filterMatches() {
     const filtered = allMatches.filter(match => {
         const homeSE = getTeamNameSE(match.homeTeam?.name).toLowerCase();
         const awaySE = getTeamNameSE(match.awayTeam?.name).toLowerCase();
-        return match.stage === "GROUP_STAGE" && (homeSE.includes(query) || awaySE.includes(query));
+        return match.stage === "GROUP_STAGE" && (
+            homeSE.includes(query) || 
+            awaySE.includes(query)
+        );
     });
     renderMatches(filtered);
 }
@@ -259,26 +290,40 @@ function setupTabs() {
     const btnRanking = document.getElementById("btn-ranking");
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
+
     btnMatches.addEventListener("click", () => {
-        btnMatches.classList.add("active"); btnRanking.classList.remove("active");
-        viewMatches.classList.remove("hidden"); viewRanking.classList.add("hidden");
+        btnMatches.classList.add("active");
+        btnRanking.classList.remove("active");
+        viewMatches.classList.remove("hidden");
+        viewRanking.classList.add("hidden");
     });
+
     btnRanking.addEventListener("click", () => {
-        btnRanking.classList.add("active"); btnMatches.classList.remove("active");
-        viewRanking.classList.remove("hidden"); viewMatches.classList.add("hidden");
+        btnRanking.classList.add("active");
+        btnMatches.classList.remove("active");
+        viewRanking.classList.remove("hidden");
+        viewMatches.classList.add("hidden");
         renderRanking();
     });
 }
 
 async function start(){
     setupTabs();
+    
     await loadPredictions();
     await loadMatches();
+
     document.getElementById("search").addEventListener("input", filterMatches);
+    
     const selector = document.getElementById("user-selector");
     if (selector) {
-        selector.addEventListener("change", (e) => { currentUser = e.target.value; filterMatches(); });
+        selector.addEventListener("change", (e) => {
+            currentUser = e.target.value;
+            filterMatches();
+        });
     }
+
     setInterval(loadMatches, 30000);
 }
+
 start();
