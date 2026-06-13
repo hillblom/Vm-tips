@@ -3,84 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VM-Tips 2026</title>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <title>VM-Tipset 2026</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
-        
         <header>
             <h1>⚽ VM-Tipset 2026</h1>
-            <div id="lastUpdated">Laddar matchdata...</div>
+            <div id="lastUpdated">Laddar...</div>
         </header>
 
         <div class="controls-wrapper">
             <div class="tabs">
-    <button id="btn-matches" class="tab-btn active">Matcher</button>
-    <button id="btn-ranking" class="tab-btn">Rankinglista</button>
-    <button id="btn-rules" class="tab-btn" style="flex: 0 0 auto; width: 40px; background-color: #cbd5e1; color: #334155;">i</button>
-</div>
-            <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;">
-                    <select id="user-selector"></select>
-                </div>
-                <div style="flex: 2;">
-                    <input type="text" id="search" placeholder="Sök lag...">
-                </div>
+                <button id="btn-matches" class="tab-btn active">Matcher</button>
+                <button id="btn-ranking" class="tab-btn">Rankinglista</button>
+                <button id="btn-rules" class="tab-btn info-btn">i</button>
+            </div>
+            
+            <div id="filter-container" class="filter-row">
+                <select id="user-selector"></select>
+                <input type="text" id="search" placeholder="Sök lag...">
             </div>
         </div>
 
-        <div id="view-matches" class="tab-content">
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 15%;">Datum</th>
-                            <th style="width: 40%;">Match</th>
-                            <th style="width: 12%;">Resultat</th>
-                            <th style="width: 11%;">Tips</th>
-                            <th style="width: 10%;">Poäng</th>
-                            <th style="width: 12%;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="matches">
-                        </tbody>
-                </table>
-            </div>
+        <div id="view-matches" class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Match</th>
+                        <th>Resultat</th>
+                        <th>Tips</th>
+                        <th>Poäng</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="matches"></tbody>
+            </table>
         </div>
 
-        <div id="view-ranking" class="tab-content hidden">
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">#</th>
-                            <th>Deltagare</th>
-                            <th>Totalpoäng</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ranking-list"></tbody>
-                </table>
-            </div>
+        <div id="view-ranking" class="table-wrapper hidden">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Plats</th>
+                        <th>Deltagare</th>
+                        <th>Totalpoäng</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-list"></tbody>
+            </table>
         </div>
-
     </div>
 
-    <script src="app.js?v=3.1"></script>
-<div id="rules-modal" class="modal hidden">
-    <div class="modal-content">
-        <span class="close-btn">&times;</span>
-        <h2>Poängräkning</h2>
-        <hr style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">
-        <p>Poängen beräknas live baserat på ditt tips jämfört med det faktiska resultatet:</p>
-        <ul style="margin-left: 20px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
-            <li><strong>12 poäng:</strong> Helt rätt resultat (t.ex. tippat 2-1, matchen blev 2-1).</li>
-            <li><strong>Rätt tecken (1X2):</strong> 10 poäng minus den totala måldifferensen.</li>
-            <li><strong>Fel tecken (1X2):</strong> 5 poäng minus den totala måldifferensen (lägst 0p).</li>
-        </ul>
-        <p style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted);"><em>Exempel: Du tippade 2-1 (Hemmavinst). Matchen slutade 1-0 (Hemmavinst). Du fick rätt tecken. Måldifferens: |2-1| + |1-0| = 2 mål ifrån. Poäng: 10 - 2 = 8 poäng.</em></p>
+    <div id="rules-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Poängräkning</h2>
+            <hr class="modal-divider">
+            <p>Poängen beräknas live baserat på ditt tips jämfört med det faktiska resultatet:</p>
+            <ul class="modal-list">
+                <li><strong>12 poäng:</strong> Helt rätt resultat (t.ex. tippat 2-1, matchen blev 2-1).</li>
+                <li><strong>Rätt tecken (1X2):</strong> 10 poäng minus den totala måldifferensen.</li>
+                <li><strong>Fel tecken (1X2):</strong> 5 poäng minus den totala måldifferensen (lägst 0p).</li>
+            </ul>
+            <p class="modal-example"><em>Exempel: Du tippade 2-1 (Hemmavinst). Matchen slutade 1-0 (Hemmavinst). Du fick rätt tecken. Måldifferens: |2-1| + |1-0| = 2 mål ifrån. Poäng: 10 - 2 = 8 poäng.</em></p>
+        </div>
     </div>
-</div>
+
+    <script src="app.js"></script>
 </body>
 </html>
