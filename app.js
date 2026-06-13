@@ -36,6 +36,19 @@ const nameToTlaMap = {
     "Tunisia": "TUN", "Turkey": "TUR", "United States": "USA", "Uruguay": "URY", "Uzbekistan": "UZB"
 };
 
+function getBroadcasterHtml(match) {
+    const matchDate = new Date(match.utcDate);
+    const day = matchDate.getDate();
+    const svtLogo = "https://upload.wikimedia.org/wikipedia/commons/2/22/SVT_Logo_2016.svg";
+    const tv4Logo = "https://upload.wikimedia.org/wikipedia/commons/e/e4/TV4_logo_2023.svg";
+
+    if (day % 2 === 0) {
+        return `<img src="${svtLogo}" class="tv-logo" alt="SVT">`;
+    } else {
+        return `<img src="${tv4Logo}" class="tv-logo" alt="TV4">`;
+    }
+}
+
 function getTeamNameSE(engName) {
     if (!engName) return "?"; 
     return teamNamesSE[engName] || engName;
@@ -144,6 +157,11 @@ function renderMatches(matchesToRender) {
         const key = getMatchKey(match);
         const prediction = getPredictionFromKey(userPredictions, key);
         
+        // Hämtar mål oavsett om matchen spelas just nu eller är avklarad
+        const homeScore = match.score.fullTime.home ?? match.score.live?.home ?? null;
+        const awayScore = match.score.fullTime.away ?? match.score.live?.away ?? null;
+        const scoreStr = (homeScore !== null && awayScore !== null) ? `${homeScore} - ${awayScore}` : "- - -";
+
         let points = "";
         let isFinished = match.status === "FINISHED";
         if(isFinished && prediction !== "-"){
@@ -160,11 +178,12 @@ function renderMatches(matchesToRender) {
 
         const dateObj = new Date(match.utcDate);
         const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}\n${dateObj.toLocaleTimeString("sv-SE", {hour: '2-digit', minute:'2-digit'})}`;
+        const tvHtml = getBroadcasterHtml(match);
 
         row.innerHTML = `
-        <td style="white-space: pre-line;">${dateStr}</td>
+        <td style="white-space: pre-line; vertical-align: middle;">${dateStr}${tvHtml}</td>
         <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
-        <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
+        <td>${scoreStr}</td>
         <td>${prediction}</td>
         <td>${points}</td>
         <td>${getStatusSE(match.status)}</td>
