@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM-Tipset 2026</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>⚽ VM-Tipset 2026</h1>
+    <div id="totalPoints">Poäng: 0</div>
+    <div id="lastUpdated"></div>
+</header>
+
+<main>
+
+<input
+    type="text"
+    id="search"
+    placeholder="Sök lag..."
+>
+
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Datum</th>
+            <th>Match</th>
+            <th>Resultat</th>
+            <th>Mitt tips</th>
+            <th>Poäng</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody id="matches"></tbody>
+</table>
+</div>
+
+</main>
+
+<script src="app.js"></script>
+
+</body>
+</html>
