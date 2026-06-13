@@ -4,14 +4,15 @@ let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
 
+// Engelsk-svensk översättning (och API-fix för "Hait")
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
     "Belgium": "Belgien", "Bosnia and Herzegovina": "Bosnien", "Bosnia-Herzegovina": "Bosnien", "Brazil": "Brasilien",
     "Canada": "Kanada", "Cape Verde": "Kap Verde", "Cape Verde Islands": "Kap Verde", "Colombia": "Colombia",
     "Croatia": "Kroatien", "Curaçao": "Curacao", "Curacao": "Curacao", "Czech Republic": "Tjeckien",
-    "Czechia": "Tjeckien", "DR Congo": "DR Kongo", "Ecuador": "Ecuador", "Egypt": "Egypten",
+    "Czechia": "Tjeckien", "DR Kongo": "DR Kongo", "DR Congo": "DR Kongo", "Ecuador": "Ecuador", "Egypt": "Egypten",
     "El Salvador": "El Salvador", "England": "England", "France": "Frankrike", "Germany": "Tyskland",
-    "Ghana": "Ghana", "Haiti": "Haiti", "Iran": "Iran", "Iraq": "Irak", "Ivory Coast": "Elfenbenskusten",
+    "Ghana": "Ghana", "Haiti": "Haiti", "Hait": "Haiti", "Iran": "Iran", "Iraq": "Irak", "Ivory Coast": "Elfenbenskusten",
     "Japan": "Japan", "Jordan": "Jordanien", "Mexico": "Mexiko", "Morocco": "Marocko",
     "Netherlands": "Nederländerna", "New Zealand": "Nya Zeeland", "Norway": "Norge", "Panama": "Panama",
     "Paraguay": "Paraguay", "Portugal": "Portugal", "Qatar": "Qatar", "Saudi Arabia": "Saudiarabien",
@@ -20,9 +21,67 @@ const teamNamesSE = {
     "Turkey": "Turkiet", "United States": "USA", "Uruguay": "Uruguay", "Uzbekistan": "Uzbekistan"
 };
 
+// Standardiserade 3-bokstavskoder baserat på engelskt namn för att matcha din json
+const nameToTlaMap = {
+    "Algeria": "ALG", "Argentina": "ARG", "Australia": "AUS", "Austria": "AUT",
+    "Belgium": "BEL", "Bosnia and Herzegovina": "BIH", "Bosnia-Herzegovina": "BIH", "Brazil": "BRA",
+    "Canada": "CAN", "Cape Verde": "CPV", "Cape Verde Islands": "CPV", "Colombia": "COL",
+    "Croatia": "CRO", "Curaçao": "CUW", "Curacao": "CUW", "Czech Republic": "CZE", "Czechia": "CZE",
+    "DR Congo": "COD", "DR Kongo": "COD", "Ecuador": "ECU", "Egypt": "EGY", "El Salvador": "SLV",
+    "England": "ENG", "France": "FRA", "Germany": "GER", "Ghana": "GHA", 
+    "Haiti": "HAI", "Hait": "HAI", // Fixar API-stavfelet
+    "Iran": "IRN", "Iraq": "IRQ", "Ivory Coast": "CIV", "Japan": "JPN", "Jordan": "JOR",
+    "Mexico": "MEX", "Morocco": "MAR", "Netherlands": "NED", "New Zealand": "NZL",
+    "Norway": "NOR", "Panama": "PAN", "Paraguay": "PAR", "Portugal": "POR", "Qatar": "QAT",
+    "Saudi Arabia": "KSA", "Scotland": "SCO", "Senegal": "SEN", "South Africa": "RSA",
+    "South Korea": "KOR", "Spain": "ESP", "Sweden": "SWE", "Switzerland": "SUI",
+    "Tunisia": "TUN", "Turkey": "TUR", "United States": "USA", "Uruguay": "URY", "Uzbekistan": "UZB"
+};
+
 function getTeamNameSE(engName) {
     if (!engName) return "?"; 
     return teamNamesSE[engName] || engName;
+}
+
+// Genererar en säker nyckel (t.ex. "HAI-SCO") baserat på lagens engelska namn i API:et
+function getMatchKey(match) {
+    const homeName = match.homeTeam?.name;
+    const awayName = match.awayTeam?.name;
+    if (!homeName || !awayName) return null;
+
+    const homeTLA = nameToTlaMap[homeName] || match.homeTeam?.tla;
+    const awayTLA = nameToTlaMap[awayName] || match.awayTeam?.tla;
+
+    if (!homeTLA || !awayTLA) return null;
+    return `${homeTLA.toUpperCase()}-${awayTLA.toUpperCase()}`;
+}
+
+// Översätter alias om din JSON använder en annan kodvariant (t.ex. HTI istället för HAI)
+function getPredictionFromKey(userPredictions, key) {
+    if (!userPredictions || !key) return "-";
+    if (userPredictions[key]) return userPredictions[key];
+
+    // Fallback-mappningar om din json har gamla ISO-koder (HTI, SAU, URU)
+    let altKey = key;
+    altKey = altKey.replace("HAI", "HTI").replace("KSA", "SAU").replace("URY", "URU");
+    if (userPredictions[altKey]) return userPredictions[altKey];
+
+    // Testa även om du har råkat vända på hemma/borta i din json
+    const parts = key.split("-");
+    const reverseKey = `${parts[1]}-${parts[0]}`;
+    if (userPredictions[reverseKey]) {
+        const scoreParts = userPredictions[reverseKey].split("-");
+        if (scoreParts.length === 2) return `${scoreParts[1]}-${scoreParts[0]}`;
+    }
+
+    // Testa omvänd ordning med de gamla ISO-koderna också
+    let altReverseKey = reverseKey.replace("HAI", "HTI").replace("KSA", "SAU").replace("URY", "URU");
+    if (userPredictions[altReverseKey]) {
+        const scoreParts = userPredictions[altReverseKey].split("-");
+        if (scoreParts.length === 2) return `${scoreParts[1]}-${scoreParts[0]}`;
+    }
+
+    return "-";
 }
 
 async function loadPredictions() {
@@ -44,47 +103,6 @@ async function loadPredictions() {
     } catch (error) {
         document.getElementById("lastUpdated").innerText = `Tips-fel: ${error.message}`;
     }
-}
-
-// NY FUNKTION: Letar efter matchen i din JSON oavsett landskod (HAI/HTI, URU/URY) eller ordning (hemma/borta)
-function findPrediction(userPredictions, homeTLA, awayTLA) {
-    if (!userPredictions) return "-";
-    
-    const h = homeTLA.toUpperCase();
-    const a = awayTLA.toUpperCase();
-
-    // Skapa alla tänkbara kombinationer av synonymer
-    const homeOptions = [h];
-    const awayOptions = [a];
-
-    if (h === "HAI" || h === "HTI") homeOptions.push("HAI", "HTI");
-    if (a === "HAI" || a === "HTI") awayOptions.push("HAI", "HTI");
-    if (h === "URU" || h === "URY") homeOptions.push("URU", "URY");
-    if (a === "URU" || a === "URY") awayOptions.push("URU", "URY");
-    if (h === "SAU" || h === "KSA") homeOptions.push("SAU", "KSA");
-    if (a === "SAU" || a === "KSA") awayOptions.push("SAU", "KSA");
-
-    // 1. Sök först efter exakt matchning i rätt ordning (Hem-Bort)
-    for (let homeOpt of homeOptions) {
-        for (let awayOpt of awayOptions) {
-            const key = `${homeOpt}-${awayOpt}`;
-            if (userPredictions[key]) return userPredictions[key];
-        }
-    }
-
-    // 2. Sök i omvänd ordning (Bort-Hem) ifall du vänt på det i din JSON
-    for (let homeOpt of homeOptions) {
-        for (let awayOpt of awayOptions) {
-            const key = `${awayOpt}-${homeOpt}`;
-            if (userPredictions[key]) {
-                // Vänd på resultatet (t.ex. "0-2" blir "2-0") så att det matchar spelschemats hemma/borta
-                const parts = userPredictions[key].split("-");
-                if (parts.length === 2) return `${parts[1]}-${parts[0]}`;
-            }
-        }
-    }
-
-    return "-";
 }
 
 function getOutcome(home, away) {
@@ -119,9 +137,9 @@ function getUserTotalPoints(user) {
     let total = 0;
     const userPredictions = allPredictions[user] || {};
     allMatches.forEach(match => {
-        if (match.stage !== "GROUP_STAGE" || !match.homeTeam?.tla || !match.awayTeam?.tla) return;
-        
-        const prediction = findPrediction(userPredictions, match.homeTeam.tla, match.awayTeam.tla);
+        if (match.stage !== "GROUP_STAGE") return;
+        const key = getMatchKey(match);
+        const prediction = getPredictionFromKey(userPredictions, key);
         if(match.status === "FINISHED" && prediction && prediction !== "-") {
             const [pHome, pAway] = prediction.split("-").map(Number);
             total += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
@@ -137,11 +155,9 @@ function renderMatches(matchesToRender) {
 
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
-        const homeTLA = match.homeTeam?.tla || "?";
-        const awayTLA = match.awayTeam?.tla || "?";
         
-        // Använd den smarta sökfunktionen
-        const prediction = findPrediction(userPredictions, homeTLA, awayTLA);
+        const key = getMatchKey(match);
+        const prediction = getPredictionFromKey(userPredictions, key);
         
         let points = "";
         let isFinished = match.status === "FINISHED";
