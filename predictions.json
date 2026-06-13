@@ -1,14 +1,44 @@
 {
-  "MEX-RSA":"2-0",
-  "KOR-CZE":"1-1",
-  "CAN-BIH":"2-1",
-  "USA-PAR":"1-0",
-  "QAT-SUI":"0-2",
-  "BRA-MAR":"2-1",
-  "HTI-SCO":"0-2",
-  "AUS-TUR":"1-1",
-  "GER-CUW":"4-0",
-  "NED-JPN":"2-1",
-  "CIV-ECU":"1-1",
-  "SWE-TUN":"2-0"
+  "Stefan": {
+    "MEX-RSA": "2-0",
+    "KOR-CZE": "1-1",
+    "CAN-BIH": "2-1",
+    "USA-PAR": "1-0",
+    "QAT-SUI": "0-2",
+    "BRA-MAR": "2-1",
+    "HTI-SCO": "0-2",
+    "AUS-TUR": "1-1",
+    "GER-CUW": "4-0",
+    "NED-JPN": "2-1",
+    "CIV-ECU": "1-1",
+    "SWE-TUN": "2-0"
+  },
+  "Johan": {
+    "MEX-RSA": "1-1",
+    "KOR-CZE": "2-0",
+    "CAN-BIH": "0-0",
+    "USA-PAR": "2-1",
+    "QAT-SUI": "1-3",
+    "BRA-MAR": "3-0",
+    "HTI-SCO": "1-2",
+    "AUS-TUR": "0-2",
+    "GER-CUW": "3-0",
+    "NED-JPN": "1-1",
+    "CIV-ECU": "2-0",
+    "SWE-TUN": "3-1"
+  },
+  "Maria": {
+    "MEX-RSA": "0-1",
+    "KOR-CZE": "1-2",
+    "CAN-BIH": "2-0",
+    "USA-PAR": "1-1",
+    "QAT-SUI": "0-1",
+    "BRA-MAR": "2-0",
+    "HTI-SCO": "0-3",
+    "AUS-TUR": "2-1",
+    "GER-CUW": "5-0",
+    "NED-JPN": "2-0",
+    "CIV-ECU": "1-2",
+    "SWE-TUN": "1-0"
+  }
 }
