@@ -3,8 +3,8 @@ const API_URL = "https://vm-predictor.stefan-hillblom.workers.dev/";
 let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
+let collapsedDays = {}; // Håller koll på vilka dagar som är minimerade
 
-// Engelsk-svensk översättning (Korrigerad med API:ets exakta stavningar med bindestreck)
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
     "Belgium": "Belgien", "Bosnia and Herzegovina": "Bosnien", "Bosnia-Herzegovina": "Bosnien", "Brazil": "Brasilien",
@@ -21,7 +21,6 @@ const teamNamesSE = {
     "Turkey": "Turkiet", "United States": "USA", "Uruguay": "Uruguay", "Uzbekistan": "Uzbekistan"
 };
 
-// Standardiserade 3-bokstavskoder baserat på API:ets lagnamn
 const nameToTlaMap = {
     "Algeria": "ALG", "Argentina": "ARG", "Australia": "AUS", "Austria": "AUT",
     "Belgium": "BEL", "Bosnia and Herzegovina": "BIH", "Bosnia-Herzegovina": "BIH", "Brazil": "BRA",
@@ -38,12 +37,31 @@ const nameToTlaMap = {
     "Tunisia": "TUN", "Turkey": "TUR", "United States": "USA", "Uruguay": "URY", "Uzbekistan": "UZB"
 };
 
+// Funktion som bestämmer TV-kanal baserat på matchdatum/tid eller lag.
+// Justera länkarna till logotyper eller tiderna så att det matchar er faktiska TV-plan!
+function getBroadcasterHtml(match) {
+    const matchDate = new Date(match.utcDate);
+    const day = matchDate.getDate();
+    const hour = matchDate.getHours();
+    
+    // SVG eller PNG-länkar till officiella logotyper
+    const svtLogo = "https://upload.wikimedia.org/wikipedia/commons/2/22/SVT_Logo_2016.svg";
+    const tv4Logo = "https://upload.wikimedia.org/wikipedia/commons/e/e4/TV4_logo_2023.svg";
+
+    // EXEMPEL-LOGIK: SVT sänder jämna datum, TV4 sänder udda datum. 
+    // Ändra detta eller hårdkoda specifika matcher om du vill ha det exakt!
+    if (day % 2 === 0) {
+        return `<img src="${svtLogo}" class="tv-logo" alt="SVT" title="Sänds på SVT">`;
+    } else {
+        return `<img src="${tv4Logo}" class="tv-logo" alt="TV4" title="Sänds på TV4">`;
+    }
+}
+
 function getTeamNameSE(engName) {
     if (!engName) return "?"; 
     return teamNamesSE[engName] || engName;
 }
 
-// Genererar en säker nyckel (t.ex. "HAI-SCO") baserat på lagens engelska namn i API:et
 function getMatchKey(match) {
     const homeName = match.homeTeam?.name;
     const awayName = match.awayTeam?.name;
@@ -56,17 +74,13 @@ function getMatchKey(match) {
     return `${homeTLA.toUpperCase()}-${awayTLA.toUpperCase()}`;
 }
 
-// Översätter alias om din JSON använder en annan kodvariant (t.ex. HTI istället för HAI)
 function getPredictionFromKey(userPredictions, key) {
     if (!userPredictions || !key) return "-";
     if (userPredictions[key]) return userPredictions[key];
 
-    // Fallback-mappningar om din json har gamla ISO-koder (HTI, SAU, URU)
-    let altKey = key;
-    altKey = altKey.replace("HAI", "HTI").replace("KSA", "SAU").replace("URY", "URU");
+    let altKey = key.replace("HAI", "HTI").replace("KSA", "SAU").replace("URY", "URU");
     if (userPredictions[altKey]) return userPredictions[altKey];
 
-    // Testa även om du har råkat vända på hemma/borta i din json
     const parts = key.split("-");
     const reverseKey = `${parts[1]}-${parts[0]}`;
     if (userPredictions[reverseKey]) {
@@ -74,7 +88,6 @@ function getPredictionFromKey(userPredictions, key) {
         if (scoreParts.length === 2) return `${scoreParts[1]}-${scoreParts[0]}`;
     }
 
-    // Testa omvänd ordning med de gamla ISO-koderna också
     let altReverseKey = reverseKey.replace("HAI", "HTI").replace("KSA", "SAU").replace("URY", "URU");
     if (userPredictions[altReverseKey]) {
         const scoreParts = userPredictions[altReverseKey].split("-");
@@ -148,45 +161,131 @@ function getUserTotalPoints(user) {
     return total;
 }
 
+// NY FUNKTION: Renderar matchlistan grupperad per dag med expand/collapse-funktionalitet
 function renderMatches(matchesToRender) {
-    const tbody = document.getElementById("matches");
-    tbody.innerHTML = "";
-    const userPredictions = allPredictions[currentUser] || {};
+    const viewMatchesContainer = document.getElementById("view-matches");
+    
+    // Rensa gamla tabeller men behåll sökfältet om det ligger där
+    const searchWrapper = document.getElementById("search")?.parentElement;
+    viewMatchesContainer.innerHTML = "";
+    if (searchWrapper) {
+        viewMatchesContainer.appendChild(searchWrapper);
+    }
 
+    if (matchesToRender.length === 0) {
+        const emptyMsg = document.createElement("p");
+        emptyMsg.innerText = "Inga matcher matchar sökningen.";
+        emptyMsg.style.padding = "20px";
+        viewMatchesContainer.appendChild(emptyMsg);
+        return;
+    }
+
+    // 1. Gruppera matcherna per datum (t.ex. "Torsdag 14 Juni")
+    const groups = {};
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
         
-        const key = getMatchKey(match);
-        const prediction = getPredictionFromKey(userPredictions, key);
+        const dateObj = new Date(match.utcDate);
+        const dateKey = dateObj.toLocaleDateString("sv-SE", { weekday: 'long', day: 'numeric', month: 'long' });
+        const capitalizedDateKey = dateKey.charAt(0).toUpperCase() + dateKey.slice(1);
+
+        if (!groups[capitalizedDateKey]) {
+            groups[capitalizedDateKey] = [];
+        }
+        groups[capitalizedDateKey].push(match);
+    });
+
+    const userPredictions = allPredictions[currentUser] || {};
+
+    // 2. Skapa en separat sektion/tabell för varje dag
+    Object.keys(groups).forEach(dateLabel => {
+        const dayContainer = document.createElement("div");
+        dayContainer.className = "day-container";
         
-        let points = "";
-        let isFinished = match.status === "FINISHED";
-        if(isFinished && prediction !== "-"){
-            const [pHome, pAway] = prediction.split("-").map(Number);
-            points = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
+        // Hämta status om dagen är minimerad sedan innan
+        if (collapsedDays[dateLabel]) {
+            dayContainer.classList.add("collapsed");
         }
 
-        const row = document.createElement("tr");
-        if (isFinished && prediction !== "-") {
-            if(points === 12) row.classList.add("green");
-            else if(points > 0) row.classList.add("yellow");
-            else if(points === 0) row.classList.add("red");
-        }
-
-        row.innerHTML = `
-        <td>${new Date(match.utcDate).toLocaleString("sv-SE", {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
-        <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
-        <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
-        <td>${prediction}</td>
-        <td>${points}</td>
-        <td>${getStatusSE(match.status)}</td>
+        // Skapa klickbar rubrik (Accordion)
+        const header = document.createElement("div");
+        header.className = "day-header";
+        if (collapsedDays[dateLabel]) header.classList.add("collapsed");
+        header.innerHTML = `
+            <span>${dateLabel}</span>
+            <span class="day-toggle-icon">▼</span>
         `;
-        tbody.appendChild(row);
+
+        // Wrapper för tabellen (behövs för snygg animering/gömning)
+        const tableWrapper = document.createElement("div");
+        tableWrapper.className = "table-wrapper";
+
+        const table = document.createElement("table");
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Tid</th>
+                    <th>Match</th>
+                    <th>Resultat</th>
+                    <th>Tips</th>
+                    <th>Poäng</th>
+                    <th>Sänds</th>
+                </tr>
+            </thead>
+        `;
+
+        const tbody = document.createElement("tbody");
+
+        groups[dateLabel].forEach(match => {
+            const key = getMatchKey(match);
+            const prediction = getPredictionFromKey(userPredictions, key);
+            
+            let points = "";
+            let isFinished = match.status === "FINISHED";
+            if(isFinished && prediction !== "-"){
+                const [pHome, pAway] = prediction.split("-").map(Number);
+                points = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
+            }
+
+            const row = document.createElement("tr");
+            if (isFinished && prediction !== "-") {
+                if(points === 12) row.classList.add("green");
+                else if(points > 0) row.classList.add("yellow");
+                else if(points === 0) row.classList.add("red");
+            }
+
+            const matchTime = new Date(match.utcDate).toLocaleTimeString("sv-SE", {hour: '2-digit', minute:'2-digit'});
+            const tvHtml = getBroadcasterHtml(match);
+
+            row.innerHTML = `
+                <td>${matchTime}</td>
+                <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
+                <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
+                <td>${prediction}</td>
+                <td>${points}</td>
+                <td style="text-align: center;">${tvHtml}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        tableWrapper.appendChild(table);
+        dayContainer.appendChild(header);
+        dayContainer.appendChild(tableWrapper);
+        viewMatchesContainer.appendChild(dayContainer);
+
+        // Klick-event för att minimera/expandera
+        header.addEventListener("click", () => {
+            const isCollapsed = dayContainer.classList.toggle("collapsed");
+            header.classList.toggle("collapsed", isCollapsed);
+            collapsedDays[dateLabel] = isCollapsed; // Spara statusen i minnet
+        });
     });
 }
 
 function renderRanking() {
     const tbody = document.getElementById("ranking-list");
+    if (!tbody) return;
     tbody.innerHTML = "";
     const ranking = Object.keys(allPredictions).map(user => ({ name: user, points: getUserTotalPoints(user) }));
     ranking.sort((a, b) => b.points - a.points);
@@ -201,14 +300,16 @@ function renderRanking() {
 async function loadMatches(){
     try {
         const response = await fetch(API_URL + "?_cb=" + new Date().getTime());
-        if (!response.ok) throw new Error(`API-status ${response.status}`);
+        if (!response.ok) throw new Error(`API-status ${status}`);
         const data = await response.json();
         allMatches = data.matches || [];
         filterMatches();
         renderRanking();
         document.getElementById("lastUpdated").innerText = `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
     } catch (error) {
-        document.getElementById("lastUpdated").innerText = `Match-fel: ${error.message}`;
+        if(document.getElementById("lastUpdated")) {
+            document.getElementById("lastUpdated").innerText = `Match-fel: ${error.message}`;
+        }
     }
 }
 
@@ -228,6 +329,9 @@ function setupTabs() {
     const btnRanking = document.getElementById("btn-ranking");
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
+    
+    if (!btnMatches) return;
+
     btnMatches.addEventListener("click", () => {
         btnMatches.classList.add("active"); btnRanking.classList.remove("active");
         viewMatches.classList.remove("hidden"); viewRanking.classList.add("hidden");
@@ -243,7 +347,10 @@ async function start(){
     setupTabs();
     await loadPredictions();
     await loadMatches();
-    document.getElementById("search").addEventListener("input", filterMatches);
+    
+    const searchInput = document.getElementById("search");
+    if (searchInput) searchInput.addEventListener("input", filterMatches);
+    
     const selector = document.getElementById("user-selector");
     if (selector) {
         selector.addEventListener("change", (e) => { currentUser = e.target.value; filterMatches(); });
