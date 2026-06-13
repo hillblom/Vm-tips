@@ -27,7 +27,6 @@ function getTeamNameSE(engName) {
 
 async function loadPredictions() {
     try {
-        // Tvingar webbläsaren att hämta predictions.json på nytt utan cache
         const response = await fetch("predictions.json?v=" + new Date().getTime());
         if (!response.ok) throw new Error(`Kunde inte hämta predictions.json (Status ${response.status})`);
         allPredictions = await response.json();
@@ -45,6 +44,47 @@ async function loadPredictions() {
     } catch (error) {
         document.getElementById("lastUpdated").innerText = `Tips-fel: ${error.message}`;
     }
+}
+
+// NY FUNKTION: Letar efter matchen i din JSON oavsett landskod (HAI/HTI, URU/URY) eller ordning (hemma/borta)
+function findPrediction(userPredictions, homeTLA, awayTLA) {
+    if (!userPredictions) return "-";
+    
+    const h = homeTLA.toUpperCase();
+    const a = awayTLA.toUpperCase();
+
+    // Skapa alla tänkbara kombinationer av synonymer
+    const homeOptions = [h];
+    const awayOptions = [a];
+
+    if (h === "HAI" || h === "HTI") homeOptions.push("HAI", "HTI");
+    if (a === "HAI" || a === "HTI") awayOptions.push("HAI", "HTI");
+    if (h === "URU" || h === "URY") homeOptions.push("URU", "URY");
+    if (a === "URU" || a === "URY") awayOptions.push("URU", "URY");
+    if (h === "SAU" || h === "KSA") homeOptions.push("SAU", "KSA");
+    if (a === "SAU" || a === "KSA") awayOptions.push("SAU", "KSA");
+
+    // 1. Sök först efter exakt matchning i rätt ordning (Hem-Bort)
+    for (let homeOpt of homeOptions) {
+        for (let awayOpt of awayOptions) {
+            const key = `${homeOpt}-${awayOpt}`;
+            if (userPredictions[key]) return userPredictions[key];
+        }
+    }
+
+    // 2. Sök i omvänd ordning (Bort-Hem) ifall du vänt på det i din JSON
+    for (let homeOpt of homeOptions) {
+        for (let awayOpt of awayOptions) {
+            const key = `${awayOpt}-${homeOpt}`;
+            if (userPredictions[key]) {
+                // Vänd på resultatet (t.ex. "0-2" blir "2-0") så att det matchar spelschemats hemma/borta
+                const parts = userPredictions[key].split("-");
+                if (parts.length === 2) return `${parts[1]}-${parts[0]}`;
+            }
+        }
+    }
+
+    return "-";
 }
 
 function getOutcome(home, away) {
@@ -80,8 +120,8 @@ function getUserTotalPoints(user) {
     const userPredictions = allPredictions[user] || {};
     allMatches.forEach(match => {
         if (match.stage !== "GROUP_STAGE" || !match.homeTeam?.tla || !match.awayTeam?.tla) return;
-        const key = `${match.homeTeam.tla}-${match.awayTeam.tla}`;
-        const prediction = userPredictions[key];
+        
+        const prediction = findPrediction(userPredictions, match.homeTeam.tla, match.awayTeam.tla);
         if(match.status === "FINISHED" && prediction && prediction !== "-") {
             const [pHome, pAway] = prediction.split("-").map(Number);
             total += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
@@ -97,10 +137,11 @@ function renderMatches(matchesToRender) {
 
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
-        const home = match.homeTeam?.tla || "?";
-        const away = match.awayTeam?.tla || "?";
-        const key = `${home}-${away}`;
-        const prediction = userPredictions[key] || "-";
+        const homeTLA = match.homeTeam?.tla || "?";
+        const awayTLA = match.awayTeam?.tla || "?";
+        
+        // Använd den smarta sökfunktionen
+        const prediction = findPrediction(userPredictions, homeTLA, awayTLA);
         
         let points = "";
         let isFinished = match.status === "FINISHED";
@@ -143,7 +184,6 @@ function renderRanking() {
 
 async function loadMatches(){
     try {
-        // Tvingar även API-anropet att runda cachen ifall din worker har cache-headers påslagna
         const response = await fetch(API_URL + "?_cb=" + new Date().getTime());
         if (!response.ok) throw new Error(`API-status ${response.status}`);
         const data = await response.json();
