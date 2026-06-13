@@ -1,9 +1,5 @@
-/* ==========================================================================
-   Gemensamma basstilar och CSS-variabler
-   ========================================================================== */
 :root {
     --primary-color: #1e3a8a;
-    --primary-hover: #1d4ed8;
     --bg-main: #f8fafc;
     --bg-card: #ffffff;
     --text-main: #0f172a;
@@ -28,8 +24,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
-    line-height: 1.4;
-    padding: 8px;
+    padding: 10px;
 }
 
 .container {
@@ -40,51 +35,44 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 15px;
-    padding: 10px 0;
+    margin-bottom: 20px;
 }
 
 header h1 {
-    font-size: 1.8rem;
+    font-size: 2rem;
     color: var(--primary-color);
-    margin-bottom: 4px;
 }
 
 #lastUpdated {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
 }
 
-/* ==========================================================================
-   Reglage och Flikar
-   ========================================================================== */
 .controls-wrapper {
     background-color: var(--bg-card);
-    padding: 12px;
+    padding: 15px;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .tabs {
     display: flex;
-    gap: 8px;
+    gap: 10px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 10px;
-    font-size: 0.95rem;
+    padding: 12px;
     font-weight: 600;
     background-color: #e2e8f0;
     color: var(--text-muted);
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
 .tab-btn.active {
@@ -95,206 +83,51 @@ header h1 {
 input[type="text"], select {
     width: 100%;
     padding: 10px;
-    font-size: 0.95rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    outline: none;
-}
-
-input[type="text"]:focus, select:focus {
-    border-color: var(--primary-color);
 }
 
 .hidden {
     display: none !important;
 }
 
-/* ==========================================================================
-   Accordion (Dagpaneler)
-   ========================================================================== */
-.day-container {
+/* Tabellstyling (Klassisk och ren layout) */
+.table-wrapper {
+    overflow-x: auto;
+    width: 100%;
     background-color: var(--bg-card);
     border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    margin-bottom: 10px;
-    overflow: hidden;
     border: 1px solid var(--border-color);
-}
-
-.day-header {
-    background-color: #f1f5f9;
-    color: #1e293b;
-    padding: 12px 14px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    user-select: none;
-}
-
-.day-toggle-icon {
-    font-size: 0.8rem;
-    transition: transform 0.2s ease;
-    color: var(--text-muted);
-}
-
-.day-container.collapsed .table-wrapper {
-    display: none;
-}
-
-.day-header.collapsed .day-toggle-icon {
-    transform: rotate(-90deg);
-}
-
-/* ==========================================================================
-   Tabell-layout för Datorer / Surfplattor
-   ========================================================================== */
-.table-wrapper {
-    width: 100%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+}
+
+th, td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 th {
     background-color: #f8fafc;
     color: var(--text-muted);
     font-weight: 600;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
-td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
-}
-
-/* Poängrader (Datorstil) */
+/* Färgkodade rader */
 tr.green td { background-color: var(--score-green); color: var(--score-green-text); }
 tr.yellow td { background-color: var(--score-yellow); color: var(--score-yellow-text); }
 tr.red td { background-color: var(--score-red); color: var(--score-red-text); }
 
-td:nth-child(1) { font-variant-numeric: tabular-nums; font-weight: 500; }
+td:nth-child(1) { font-weight: 500; color: var(--text-muted); }
 td:nth-child(2) { font-weight: 600; }
-td:nth-child(3), td:nth-child(4) { font-variant-numeric: tabular-nums; font-weight: 700; }
+td:nth-child(3), td:nth-child(4) { font-weight: 700; }
 td:nth-child(5) { font-weight: 800; text-align: center; }
-
-.tv-logo-cell {
-    text-align: center;
-}
-
-.tv-logo {
-    height: 14px;
-    max-width: 45px;
-    vertical-align: middle;
-    object-fit: contain;
-}
-
-/* Topplista */
-#view-ranking table {
-    background-color: var(--bg-card);
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-}
-#view-ranking td { padding: 12px; }
-
-/* ==========================================================================
-   REVOLUTIONERANDE MOBILVY (Ingen skroll i sidled, allt får plats)
-   ========================================================================== */
-@media (max-width: 650px) {
-    /* Dölj den stela tabell-headern på mobilen */
-    #view-matches th {
-        display: none;
-    }
-
-    /* Gör om varje matchrad till ett eget litet flex-kort */
-    #view-matches tr {
-        display: flex;
-        flex-wrap: wrap;
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--border-color);
-        align-items: center;
-    }
-
-    /* Rad 1: Tid och TV-logga till vänster */
-    #view-matches td:nth-child(1) {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 0 0 45%;
-        padding: 0 0 6px 0;
-        border: none;
-        font-size: 0.85rem;
-        background-color: transparent !important;
-    }
-
-    /* Rad 1: Status (Kommande/Fulltid) till höger */
-    #view-matches td:nth-child(6) {
-        flex: 0 0 55%;
-        text-align: right;
-        padding: 0 0 6px 0;
-        border: none;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        background-color: transparent !important;
-    }
-
-    /* Rad 2: Lagen (får hela bredden) */
-    #view-matches td:nth-child(2) {
-        flex: 0 0 100%;
-        padding: 4px 0;
-        border: none;
-        font-size: 0.95rem;
-        background-color: transparent !important;
-    }
-
-    /* Rad 3: Data-sektionen (Resultat, Tips, Poäng) */
-    #view-matches td:nth-child(3),
-    #view-matches td:nth-child(4),
-    #view-matches td:nth-child(5) {
-        flex: 1;
-        padding: 6px 4px;
-        margin-top: 6px;
-        border: none;
-        font-size: 0.85rem;
-        text-align: center;
-        border-radius: 4px;
-    }
-
-    /* Lägg till förklarande text framför siffrorna i mobilvyn */
-    #view-matches td:nth-child(3)::before { content: "Res: "; font-weight: normal; color: var(--text-muted); }
-    #view-matches td:nth-child(4)::before { content: "Tips: "; font-weight: normal; color: var(--text-muted); }
-    #view-matches td:nth-child(5)::before { content: "Poäng: "; font-weight: normal; }
-
-    /* Flytta sänds-loggan så den ligger bredvid tiden */
-    #view-matches .tv-logo-cell {
-        display: none; /* Döljer ursprungliga cellen */
-    }
-    
-    /* Skjut in TV-loggan bredvid matchtiden dynamiskt via CSS */
-    #view-matches td:nth-child(1)::after {
-        content: "";
-        display: inline-block;
-    }
-
-    /* Hantera bakgrundsfärgerna för poäng på rad-nivå istället för cell-nivå */
-    #view-matches tr.green { background-color: rgba(209, 250, 229, 0.4); color: var(--score-green-text); }
-    #view-matches tr.yellow { background-color: rgba(254, 243, 199, 0.5); color: var(--score-yellow-text); }
-    #view-matches tr.red { background-color: rgba(254, 226, 226, 0.4); color: var(--score-red-text); }
-    
-    /* Ge poängrutan en extra tydlig bakgrund inuti kortet */
-    #view-matches tr.green td:nth-child(5) { background-color: var(--score-green); }
-    #view-matches tr.yellow td:nth-child(5) { background-color: var(--score-yellow); }
-    #view-matches tr.red td:nth-child(5) { background-color: var(--score-red); }
-}
