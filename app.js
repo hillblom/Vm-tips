@@ -39,13 +39,15 @@ const nameToTlaMap = {
 function getBroadcasterHtml(match) {
     const matchDate = new Date(match.utcDate);
     const day = matchDate.getDate();
-    const svtLogo = "https://upload.wikimedia.org/wikipedia/commons/2/22/SVT_Logo_2016.svg";
-    const tv4Logo = "https://upload.wikimedia.org/wikipedia/commons/e/e4/TV4_logo_2023.svg";
+    
+    // Inbakade, stabila SVG-data (slipper externa laddningsproblem)
+    const svtSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 40"><path fill="%23FFFFFF" d="M0 0h140v40H0z"/><path fill="%231e3a8a" d="M22 12h8l4 11 4-11h8v16h-7v-8l-3 8h-4l-3-8v8h-7V12zm38 0h8l5 16h-7l-1-4h-4l-1 4h-7l5-16zm2 4l-1 5h2l-1-5zm22-4h14v4h-10v2h8v4h-8v2h10v4H84V12z"/></svg>`;
+    const tv4Svg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><path fill="%23E2231A" d="M0 0h60v40H0z"/><text x="12" y="28" fill="white" font-family="sans-serif" font-weight="900" font-size="24">TV4</text></svg>`;
 
     if (day % 2 === 0) {
-        return `<img src="${svtLogo}" class="tv-logo" alt="SVT">`;
+        return `<img src="${svtSvg}" class="tv-logo" alt="SVT" title="SVT">`;
     } else {
-        return `<img src="${tv4Logo}" class="tv-logo" alt="TV4">`;
+        return `<img src="${tv4Svg}" class="tv-logo" alt="TV4" title="TV4">`;
     }
 }
 
