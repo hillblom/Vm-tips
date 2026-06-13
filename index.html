@@ -68,5 +68,19 @@
     </div>
 
     <script src="app.js?v=3.1"></script>
+<div id="rules-modal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Poängräkning</h2>
+        <hr style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <p>Poängen beräknas live baserat på ditt tips jämfört med det faktiska resultatet:</p>
+        <ul style="margin-left: 20px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>12 poäng:</strong> Helt rätt resultat (t.ex. tippat 2-1, matchen blev 2-1).</li>
+            <li><strong>Rätt tecken (1X2):</strong> 10 poäng minus den totala måldifferensen.</li>
+            <li><strong>Fel tecken (1X2):</strong> 5 poäng minus den totala måldifferensen (lägst 0p).</li>
+        </ul>
+        <p style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted);"><em>Exempel: Du tippade 2-1 (Hemmavinst). Matchen slutade 1-0 (Hemmavinst). Du fick rätt tecken. Måldifferens: |2-1| + |1-0| = 2 mål ifrån. Poäng: 10 - 2 = 8 poäng.</em></p>
+    </div>
+</div>
 </body>
 </html>
