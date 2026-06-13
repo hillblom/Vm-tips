@@ -95,7 +95,6 @@ input[type="text"], select {
     display: none !important;
 }
 
-/* Kompakt och stram datalayout */
 .table-wrapper {
     overflow-x: auto;
     width: 100%;
@@ -126,25 +125,23 @@ th {
     letter-spacing: 0.05em;
 }
 
-/* Färgstatusar för rader */
 tr.green td { background-color: var(--score-green); color: var(--score-green-text); }
 tr.yellow td { background-color: var(--score-yellow); color: var(--score-yellow-text); }
 tr.red td { background-color: var(--score-red); color: var(--score-red-text); }
 
-/* Kontroll av fontvikter - rent och stramt */
 td:nth-child(1) { font-weight: 400; }
 td:nth-child(2) { font-weight: 600; }
 td:nth-child(3), td:nth-child(4) { font-weight: 400; } 
 td:nth-child(5) { font-weight: 700; text-align: center; } 
 td:nth-child(6) { font-weight: 400; color: var(--text-muted); font-size: 0.85rem; }
 
-/* Layout för datum och kanal på samma rad */
+/* Layout för att ha datum och logga bredvid varandra på samma rad */
 .date-cell-wrapper {
     display: flex;
     align-items: center;
-    gap: 8px;
     justify-content: space-between;
-    min-width: 115px;
+    gap: 10px;
+    min-width: 130px;
 }
 
 .date-text {
@@ -153,25 +150,18 @@ td:nth-child(6) { font-weight: 400; color: var(--text-muted); font-size: 0.85rem
     white-space: nowrap;
 }
 
-/* CSS-baserade, blixtsnabba TV-loggor */
-.tv-badge {
-    font-size: 0.65rem;
-    font-weight: 900;
-    padding: 1px 4px;
-    border-radius: 3px;
-    text-align: center;
-    min-width: 32px;
-    display: inline-block;
-    letter-spacing: 0.02em;
+.logo-container {
+    display: flex;
+    align-items: center;
+    width: 32px;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.tv-badge.svt {
-    background-color: #2b2b2b;
-    color: #00f0ff;
-    border: 1px solid #444;
-}
-
-.tv-badge.tv4 {
-    background-color: #e2231a;
-    color: #ffffff;
+/* Stil för dina lokala bilder */
+.tv-logo {
+    max-height: 12px;
+    max-width: 32px;
+    object-fit: contain;
+    display: block;
 }
