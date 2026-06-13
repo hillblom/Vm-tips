@@ -1,5 +1,5 @@
 const API_URL =
-  "https://DIN-CLOUDFLARE-WORKER.workers.dev";
+  "https://vm-predictor.stefan-hillblom.workers.dev/";
 
 let predictions = {};
 
