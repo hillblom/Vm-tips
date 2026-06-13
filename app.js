@@ -5,14 +5,13 @@ let allMatches = [];
 let currentUser = "";
 
 async function loadPredictions() {
-    const response = await fetch("./predictions.json");
+    // Ändrat till "predictions.json" utan ./ för bättre kompatibilitet med GitHub
+    const response = await fetch("predictions.json");
     allPredictions = await response.json();
     
-    // Sätt första personen i listan (t.ex. Stefan) som standardanvändare
     const users = Object.keys(allPredictions);
     currentUser = users[0];
     
-    // Fyll i dropdown-menyn i HTML dynamiskt
     const selector = document.getElementById("user-selector");
     selector.innerHTML = "";
     users.forEach(user => {
@@ -41,7 +40,6 @@ function calculatePoints(actualHome, actualAway, predictedHome, predictedAway){
     return Math.max(0, points);
 }
 
-// Hjälpfunktion för ommappning av matchstatus till svenska
 function getStatusSE(status) {
     switch (status) {
         case "FINISHED":
@@ -61,13 +59,11 @@ function getStatusSE(status) {
     }
 }
 
-// Räknar ut totalpoäng för en specifik användare (endast grundomgångar)
 function getUserTotalPoints(user) {
     let total = 0;
     const userPredictions = allPredictions[user] || {};
 
     allMatches.forEach(match => {
-        // FILTER: Bara grundomgångar/gruppspel
         if (match.stage !== "GROUP_STAGE") return;
 
         const key = `${match.homeTeam.tla}-${match.awayTeam.tla}`;
@@ -86,4 +82,81 @@ function getUserTotalPoints(user) {
     return total;
 }
 
-function renderMatches(matchesToRender
+function renderMatches(matchesToRender) {
+    const tbody = document.getElementById("matches");
+    tbody.innerHTML = "";
+    
+    const userPredictions = allPredictions[currentUser] || {};
+
+    matchesToRender.forEach(match => {
+        if (match.stage !== "GROUP_STAGE") return;
+
+        const home = match.homeTeam.tla;
+        const away = match.awayTeam.tla;
+        const key = `${home}-${away}`;
+        const prediction = userPredictions[key] || "-";
+        
+        let points = "";
+        let isFinished = match.status === "FINISHED";
+
+        if(isFinished && prediction !== "-"){
+            const [pHome, pAway] = prediction.split("-").map(Number);
+            points = calculatePoints(
+                match.score.fullTime.home,
+                match.score.fullTime.away,
+                pHome,
+                pAway
+            );
+        }
+
+        const row = document.createElement("tr");
+
+        if (isFinished && prediction !== "-") {
+            if(points === 12) row.classList.add("green");
+            else if(points > 0) row.classList.add("yellow");
+            else if(points === 0) row.classList.add("red");
+        }
+
+        const statusSE = getStatusSE(match.status);
+
+        row.innerHTML = `
+        <td>${new Date(match.utcDate).toLocaleString("sv-SE", {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
+        <td>${match.homeTeam.name} - ${match.awayTeam.name}</td>
+        <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
+        <td>${prediction}</td>
+        <td>${points}</td>
+        <td>${statusSE}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+function renderRanking() {
+    const tbody = document.getElementById("ranking-list");
+    tbody.innerHTML = "";
+
+    const ranking = Object.keys(allPredictions).map(user => {
+        return {
+            name: user,
+            points: getUserTotalPoints(user)
+        };
+    });
+
+    ranking.sort((a, b) => b.points - a.points);
+
+    ranking.forEach((player, index) => {
+        const row = document.createElement("tr");
+        if(index === 0) row.style.fontWeight = "bold";
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${player.name}</td>
+            <td><strong>${player.points} p</strong></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+async function loadMatches(){
+    const response = await
