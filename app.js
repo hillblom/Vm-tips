@@ -240,14 +240,38 @@ function setupTabs() {
     const btnRanking = document.getElementById("btn-ranking");
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
+    
+    // Element för poängrutan
+    const btnRules = document.getElementById("btn-rules");
+    const rulesModal = document.getElementById("rules-modal");
+    const closeBtn = document.querySelector(".close-btn");
+
     btnMatches.addEventListener("click", () => {
         btnMatches.classList.add("active"); btnRanking.classList.remove("active");
         viewMatches.classList.remove("hidden"); viewRanking.classList.add("hidden");
     });
+    
     btnRanking.addEventListener("click", () => {
         btnRanking.classList.add("active"); btnMatches.classList.remove("active");
         viewRanking.classList.remove("hidden"); viewMatches.classList.add("hidden");
         renderRanking();
+    });
+
+    // Öppna rutan när man klickar på "i"
+    btnRules.addEventListener("click", () => {
+        rulesModal.classList.remove("hidden");
+    });
+
+    // Stäng rutan när man klickar på krysset
+    closeBtn.addEventListener("click", () => {
+        rulesModal.classList.add("hidden");
+    });
+
+    // Stäng rutan om man klickar utanför själva rutan
+    window.addEventListener("click", (event) => {
+        if (event.target === rulesModal) {
+            rulesModal.classList.add("hidden");
+        }
     });
 }
 
