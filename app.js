@@ -4,78 +4,21 @@ let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
 
-// Komplett översättningslista för alla 48 deltagande länder i gruppspelet
 const teamNamesSE = {
-    "Algeria": "Algeriet",
-    "Argentina": "Argentina",
-    "Australia": "Australien",
-    "Austria": "Österrike",
-    "Belgium": "Belgien",
-    "Bosnia and Herzegovina": "Bosnien",
-    "Bosnia-Herzegovina": "Bosnien",
-    "Brazil": "Brasilien",
-    "Canada": "Kanada",
-    "Cape Verde": "Kap Verde",
-    "Cape Verde Islands": "Kap Verde",
-    "Colombia": "Colombia",
-    "Croatia": "Kroatien",
-    "Curaçao": "Curacao",
-    "Curacao": "Curacao",
-    "Czech Republic": "Tjeckien",
-    "Czechia": "Tjeckien",
-    "DR Congo": "DR Kongo",
-    "Ecuador": "Ecuador",
-    "Egypt": "Egypten",
-    "El Salvador": "El Salvador",
-    "England": "England",
-    "France": "Frankrike",
-    "Germany": "Tyskland",
-    "Ghana": "Ghana",
-    "Haiti": "Haiti",
-    "Iran": "Iran",
-    "Iraq": "Irak",
-    "Ivory Coast": "Elfenbenskusten",
-    "Japan": "Japan",
-    "Jordan": "Jordanien",
-    "Mexico": "Mexiko",
-    "Morocco": "Marocko",
-    "Netherlands": "Nederländerna",
-    "New Zealand": "Nya Zeeland",
-    "Norway": "Norge",
-    "Panama": "Panama",
-    "Paraguay": "Paraguay",
-    "Portugal": "Portugal",
-    "Qatar": "Qatar",
-    "Saudi Arabia": "Saudiarabien",
-    "Scotland": "Skottland",
-    "Senegal": "Senegal",
-    "South Africa": "Sydafrika",
-    "South Korea": "Sydkorea",
-    "Spain": "Spanien",
-    "Sweden": "Sverige",
-    "Switzerland": "Schweiz",
-    "Tunisia": "Tunisien",
-    "Turkey": "Turkiet",
-    "United States": "USA",
-    "Uruguay": "Uruguay",
-    "Uzbekistan": "Uzbekistan"
+    "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
+    "Belgium": "Belgien", "Bosnia and Herzegovina": "Bosnien", "Bosnia-Herzegovina": "Bosnien", "Brazil": "Brasilien",
+    "Canada": "Kanada", "Cape Verde": "Kap Verde", "Cape Verde Islands": "Kap Verde", "Colombia": "Colombia",
+    "Croatia": "Kroatien", "Curaçao": "Curacao", "Curacao": "Curacao", "Czech Republic": "Tjeckien",
+    "Czechia": "Tjeckien", "DR Congo": "DR Kongo", "Ecuador": "Ecuador", "Egypt": "Egypten",
+    "El Salvador": "El Salvador", "England": "England", "France": "Frankrike", "Germany": "Tyskland",
+    "Ghana": "Ghana", "Haiti": "Haiti", "Iran": "Iran", "Iraq": "Irak", "Ivory Coast": "Elfenbenskusten",
+    "Japan": "Japan", "Jordan": "Jordanien", "Mexico": "Mexiko", "Morocco": "Marocko",
+    "Netherlands": "Nederländerna", "New Zealand": "Nya Zeeland", "Norway": "Norge", "Panama": "Panama",
+    "Paraguay": "Paraguay", "Portugal": "Portugal", "Qatar": "Qatar", "Saudi Arabia": "Saudiarabien",
+    "Scotland": "Skottland", "Senegal": "Senegal", "South Africa": "Sydafrika", "South Korea": "Sydkorea",
+    "Spain": "Spanien", "Sweden": "Sverige", "Switzerland": "Schweiz", "Tunisia": "Tunisien",
+    "Turkey": "Turkiet", "United States": "USA", "Uruguay": "Uruguay", "Uzbekistan": "Uzbekistan"
 };
-
-// Om API:et använder en landskod (TLA) som skiljer sig från din predictions.json,
-// så mappar vi om API-koden (vänster) till din JSON-kod (höger) här.
-const tlaAliases = {
-    "HAI": "HTI", // Om API:et säger HAI men du har HTI
-    "KSA": "SAU", // Om API:et säger KSA men du har SAU
-    "KOR": "KOR", // Just in case
-    "RSA": "RSA"
-};
-
-// Hjälpfunktion för att hämta rätt landskod baserat på dina alias
-function getCleanTLA(tla) {
-    if (!tla) return "?";
-    const upperTLA = tla.toUpperCase();
-    return tlaAliases[upperTLA] || upperTLA;
-}
 
 function getTeamNameSE(engName) {
     if (!engName) return "?"; 
@@ -84,27 +27,23 @@ function getTeamNameSE(engName) {
 
 async function loadPredictions() {
     try {
-        const response = await fetch("predictions.json");
+        // Tvingar webbläsaren att hämta predictions.json på nytt utan cache
+        const response = await fetch("predictions.json?v=" + new Date().getTime());
         if (!response.ok) throw new Error(`Kunde inte hämta predictions.json (Status ${response.status})`);
-        
         allPredictions = await response.json();
-        
         const users = Object.keys(allPredictions);
-        if (users.length === 0) throw new Error("predictions.json är tom eller saknar användare");
-        
+        if (users.length === 0) throw new Error("predictions.json är tom");
         currentUser = users[0];
         
         const selector = document.getElementById("user-selector");
         selector.innerHTML = "";
         users.forEach(user => {
             const option = document.createElement("option");
-            option.value = user;
-            option.innerText = user;
+            option.value = user; option.innerText = user;
             selector.appendChild(option);
         });
     } catch (error) {
         document.getElementById("lastUpdated").innerText = `Tips-fel: ${error.message}`;
-        console.error(error);
     }
 }
 
@@ -115,58 +54,37 @@ function getOutcome(home, away) {
 }
 
 function calculatePoints(actualHome, actualAway, predictedHome, predictedAway){
-    if(actualHome === predictedHome && actualAway === predictedAway){
-        return 12;
-    }
+    if(actualHome === predictedHome && actualAway === predictedAway) return 12;
     const diff = Math.abs(actualHome - predictedHome) + Math.abs(actualAway - predictedAway);
     const actual = getOutcome(actualHome, actualAway);
     const predicted = getOutcome(predictedHome, predictedAway);
-
     let points = actual === predicted ? 10 - diff : 5 - diff;
     return Math.max(0, points);
 }
 
 function getStatusSE(status) {
     switch (status) {
-        case "FINISHED":
-            return "Fulltid";
+        case "FINISHED": return "Fulltid";
         case "IN_PLAY":
-        case "PAUSED":
-            return "Pågår";
+        case "PAUSED": return "Pågår";
         case "TIMED":
-        case "SCHEDULED":
-            return "Kommande";
-        case "POSTPONED":
-            return "Uppskjuten";
-        case "CANCELLED":
-            return "Inställd";
-        default:
-            return status;
+        case "SCHEDULED": return "Kommande";
+        case "POSTPONED": return "Uppskjuten";
+        case "CANCELLED": return "Inställd";
+        default: return status;
     }
 }
 
 function getUserTotalPoints(user) {
     let total = 0;
     const userPredictions = allPredictions[user] || {};
-
     allMatches.forEach(match => {
-        if (match.stage !== "GROUP_STAGE") return;
-        if (!match.homeTeam?.tla || !match.awayTeam?.tla) return;
-
-        // Använd korrigerade landskoder för poängräkningen
-        const home = getCleanTLA(match.homeTeam.tla);
-        const away = getCleanTLA(match.awayTeam.tla);
-        const key = `${home}-${away}`;
+        if (match.stage !== "GROUP_STAGE" || !match.homeTeam?.tla || !match.awayTeam?.tla) return;
+        const key = `${match.homeTeam.tla}-${match.awayTeam.tla}`;
         const prediction = userPredictions[key];
-        
         if(match.status === "FINISHED" && prediction && prediction !== "-") {
             const [pHome, pAway] = prediction.split("-").map(Number);
-            total += calculatePoints(
-                match.score.fullTime.home,
-                match.score.fullTime.away,
-                pHome,
-                pAway
-            );
+            total += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
         }
     });
     return total;
@@ -175,54 +93,37 @@ function getUserTotalPoints(user) {
 function renderMatches(matchesToRender) {
     const tbody = document.getElementById("matches");
     tbody.innerHTML = "";
-    
     const userPredictions = allPredictions[currentUser] || {};
 
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
-
-        // Här kör vi landskoderna genom vår alias-tvättmaskin
-        const home = getCleanTLA(match.homeTeam?.tla);
-        const away = getCleanTLA(match.awayTeam?.tla);
+        const home = match.homeTeam?.tla || "?";
+        const away = match.awayTeam?.tla || "?";
         const key = `${home}-${away}`;
-        
         const prediction = userPredictions[key] || "-";
         
         let points = "";
         let isFinished = match.status === "FINISHED";
-
         if(isFinished && prediction !== "-"){
             const [pHome, pAway] = prediction.split("-").map(Number);
-            points = calculatePoints(
-                match.score.fullTime.home,
-                match.score.fullTime.away,
-                pHome,
-                pAway
-            );
+            points = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
         }
 
         const row = document.createElement("tr");
-
         if (isFinished && prediction !== "-") {
             if(points === 12) row.classList.add("green");
             else if(points > 0) row.classList.add("yellow");
             else if(points === 0) row.classList.add("red");
         }
 
-        const statusSE = getStatusSE(match.status);
-        
-        const homeSE = getTeamNameSE(match.homeTeam?.name);
-        const awaySE = getTeamNameSE(match.awayTeam?.name);
-
         row.innerHTML = `
         <td>${new Date(match.utcDate).toLocaleString("sv-SE", {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
-        <td>${homeSE} - ${awaySE}</td>
+        <td>${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
         <td>${match.score.fullTime.home ?? "-"} - ${match.score.fullTime.away ?? "-"}</td>
         <td>${prediction}</td>
         <td>${points}</td>
-        <td>${statusSE}</td>
+        <td>${getStatusSE(match.status)}</td>
         `;
-
         tbody.appendChild(row);
     });
 }
@@ -230,42 +131,26 @@ function renderMatches(matchesToRender) {
 function renderRanking() {
     const tbody = document.getElementById("ranking-list");
     tbody.innerHTML = "";
-
-    const ranking = Object.keys(allPredictions).map(user => {
-        return {
-            name: user,
-            points: getUserTotalPoints(user)
-        };
-    });
-
+    const ranking = Object.keys(allPredictions).map(user => ({ name: user, points: getUserTotalPoints(user) }));
     ranking.sort((a, b) => b.points - a.points);
-
     ranking.forEach((player, index) => {
         const row = document.createElement("tr");
         if(index === 0) row.style.fontWeight = "bold";
-
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${player.name}</td>
-            <td><strong>${player.points} p</strong></td>
-        `;
+        row.innerHTML = `<td>${index + 1}</td><td>${player.name}</td><td><strong>${player.points} p</strong></td>`;
         tbody.appendChild(row);
     });
 }
 
 async function loadMatches(){
     try {
-        const response = await fetch(API_URL);
+        // Tvingar även API-anropet att runda cachen ifall din worker har cache-headers påslagna
+        const response = await fetch(API_URL + "?_cb=" + new Date().getTime());
         if (!response.ok) throw new Error(`API-status ${response.status}`);
-        
         const data = await response.json();
         allMatches = data.matches || [];
-        
         filterMatches();
         renderRanking();
-
-        document.getElementById("lastUpdated").innerText = 
-            `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
+        document.getElementById("lastUpdated").innerText = `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
     } catch (error) {
         document.getElementById("lastUpdated").innerText = `Match-fel: ${error.message}`;
     }
@@ -277,10 +162,7 @@ function filterMatches() {
     const filtered = allMatches.filter(match => {
         const homeSE = getTeamNameSE(match.homeTeam?.name).toLowerCase();
         const awaySE = getTeamNameSE(match.awayTeam?.name).toLowerCase();
-        return match.stage === "GROUP_STAGE" && (
-            homeSE.includes(query) || 
-            awaySE.includes(query)
-        );
+        return match.stage === "GROUP_STAGE" && (homeSE.includes(query) || awaySE.includes(query));
     });
     renderMatches(filtered);
 }
@@ -290,40 +172,26 @@ function setupTabs() {
     const btnRanking = document.getElementById("btn-ranking");
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
-
     btnMatches.addEventListener("click", () => {
-        btnMatches.classList.add("active");
-        btnRanking.classList.remove("active");
-        viewMatches.classList.remove("hidden");
-        viewRanking.classList.add("hidden");
+        btnMatches.classList.add("active"); btnRanking.classList.remove("active");
+        viewMatches.classList.remove("hidden"); viewRanking.classList.add("hidden");
     });
-
     btnRanking.addEventListener("click", () => {
-        btnRanking.classList.add("active");
-        btnMatches.classList.remove("active");
-        viewRanking.classList.remove("hidden");
-        viewMatches.classList.add("hidden");
+        btnRanking.classList.add("active"); btnMatches.classList.remove("active");
+        viewRanking.classList.remove("hidden"); viewMatches.classList.add("hidden");
         renderRanking();
     });
 }
 
 async function start(){
     setupTabs();
-    
     await loadPredictions();
     await loadMatches();
-
     document.getElementById("search").addEventListener("input", filterMatches);
-    
     const selector = document.getElementById("user-selector");
     if (selector) {
-        selector.addEventListener("change", (e) => {
-            currentUser = e.target.value;
-            filterMatches();
-        });
+        selector.addEventListener("change", (e) => { currentUser = e.target.value; filterMatches(); });
     }
-
     setInterval(loadMatches, 30000);
 }
-
 start();
