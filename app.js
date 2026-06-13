@@ -39,8 +39,6 @@ const nameToTlaMap = {
 function getBroadcasterHtml(match) {
     const matchDate = new Date(match.utcDate);
     const day = matchDate.getDate();
-    
-    // HÄR hämmas bilderna lokalt från din egen mapp på GitHub
     if (day % 2 === 0) {
         return `<img src="svt.png" class="tv-logo" alt="SVT">`;
     } else {
@@ -241,7 +239,6 @@ function setupTabs() {
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
     
-    // Element för poängrutan
     const btnRules = document.getElementById("btn-rules");
     const rulesModal = document.getElementById("rules-modal");
     const closeBtn = document.querySelector(".close-btn");
@@ -257,17 +254,18 @@ function setupTabs() {
         renderRanking();
     });
 
-    // Öppna rutan när man klickar på "i"
-    btnRules.addEventListener("click", () => {
+    // Öppna rutan vid klick på info-knappen
+    btnRules.addEventListener("click", (e) => {
+        e.preventDefault();
         rulesModal.classList.remove("hidden");
     });
 
-    // Stäng rutan när man klickar på krysset
+    // Stäng vid klick på krysset
     closeBtn.addEventListener("click", () => {
         rulesModal.classList.add("hidden");
     });
 
-    // Stäng rutan om man klickar utanför själva rutan
+    // Stäng vid klick utanför själva innehållsboxen
     window.addEventListener("click", (event) => {
         if (event.target === rulesModal) {
             rulesModal.classList.add("hidden");
