@@ -3,6 +3,7 @@ const API_URL = "https://vm-predictor.stefan-hillblom.workers.dev/";
 let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
+let matrixSortByRanking = true; // true = sortera efter poäng (standard), false = sortera efter namn (A-Ö)
 
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
@@ -224,8 +225,19 @@ function renderMatrix() {
 
     if (validMatches.length === 0) return;
 
+    // Skapa en klickbar rubrik för deltagarkolumnen
     const thPlayer = document.createElement("th");
-    thPlayer.innerText = "Deltagare";
+    thPlayer.style.cursor = "pointer";
+    thPlayer.style.userSelect = "none";
+    thPlayer.title = "Klicka för att ändra sortering (Namn / Ranking)";
+    // Visar en trofé om det är sorterat på poäng, eller bokstäver om det är A-Ö
+    thPlayer.innerHTML = `Deltagare ${matrixSortByRanking ? "🏆" : "🔤"}`;
+    
+    // Lägg till klick-lyssnare som skiftar läge och ritar om matrisen direkt
+    thPlayer.addEventListener("click", () => {
+        matrixSortByRanking = !matrixSortByRanking;
+        renderMatrix();
+    });
     headerRow.appendChild(thPlayer);
 
     validMatches.forEach(match => {
@@ -235,7 +247,14 @@ function renderMatrix() {
         headerRow.appendChild(th);
     });
 
-    const users = Object.keys(allPredictions).sort();
+    // Sortera deltagarna baserat på vilket läge som är aktivt
+    const users = Object.keys(allPredictions).sort((a, b) => {
+        if (matrixSortByRanking) {
+            return getUserTotalPoints(b) - getUserTotalPoints(a); // Sortera efter poäng (högst först)
+        } else {
+            return a.localeCompare(b, 'sv'); // Sortera alfabetiskt enligt svenska regler (A-Ö)
+        }
+    });
 
     users.forEach(user => {
         const row = document.createElement("tr");
