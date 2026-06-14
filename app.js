@@ -72,4 +72,286 @@ function getPredictionFromKey(userPredictions, key) {
         const scoreParts = userPredictions[reverseKey].split("-");
         if (scoreParts.length === 2) return `${scoreParts[1]}-${scoreParts[0]}`;
     }
-    let altReverseKey
+    let altReverseKey = reverseKey.replace("HAI", "HTI").replace("KSA", "SAU").replace("URY", "URU");
+    if (userPredictions[altReverseKey]) {
+        const scoreParts = userPredictions[altReverseKey].split("-");
+        if (scoreParts.length === 2) return `${scoreParts[1]}-${scoreParts[0]}`;
+    }
+    return "-";
+}
+
+async function loadPredictions() {
+    try {
+        const response = await fetch("predictions.json?v=" + new Date().getTime());
+        if (!response.ok) throw new Error(`Kunde inte hämta predictions.json`);
+        allPredictions = await response.json();
+        const users = Object.keys(allPredictions);
+        if (users.length === 0) throw new Error("predictions.json är tom");
+        currentUser = users[0];
+        
+        const selector = document.getElementById("user-selector");
+        if (selector) {
+            selector.innerHTML = "";
+            users.forEach(user => {
+                const option = document.createElement("option");
+                option.value = user; option.innerText = user;
+                selector.appendChild(option);
+            });
+        }
+    } catch (error) {
+        const errEl = document.getElementById("lastUpdated");
+        if (errEl) errEl.innerText = `Tips-fel: ${error.message}`;
+    }
+}
+
+function getOutcome(home, away) {
+    if(home > away) return "H";
+    if(home < away) return "A";
+    return "D";
+}
+
+function calculatePoints(actualHome, actualAway, predictedHome, predictedAway){
+    if(actualHome === predictedHome && actualAway === predictedAway) return 12;
+    const diff = Math.abs(actualHome - predictedHome) + Math.abs(actualAway - predictedAway);
+    const actual = getOutcome(actualHome, actualAway);
+    const predicted = getOutcome(predictedHome, predictedAway);
+    let points = actual === predicted ? 10 - diff : 5 - diff;
+    return Math.max(0, points);
+}
+
+function getStatusSE(status) {
+    switch (status) {
+        case "FINISHED": return "Fulltid";
+        case "IN_PLAY":
+        case "PAUSED": return "Pågår";
+        case "TIMED":
+        case "SCHEDULED": return "Kommande";
+        default: return "Kommande";
+    }
+}
+
+function getUserTotalPoints(user) {
+    let total = 0;
+    const userPredictions = allPredictions[user] || {};
+    allMatches.forEach(match => {
+        if (match.stage !== "GROUP_STAGE") return;
+        const key = getMatchKey(match);
+        const prediction = getPredictionFromKey(userPredictions, key);
+        if(match.status === "FINISHED" && prediction && prediction !== "-") {
+            const [pHome, pAway] = prediction.split("-").map(Number);
+            total += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
+        }
+    });
+    return total;
+}
+
+function renderMatches(matchesToRender) {
+    const tbody = document.getElementById("matches");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    const userPredictions = allPredictions[currentUser] || {};
+
+    matchesToRender.forEach(match => {
+        if (match.stage !== "GROUP_STAGE") return;
+        
+        const key = getMatchKey(match);
+        const prediction = getPredictionFromKey(userPredictions, key);
+        
+        const homeScore = match.score.fullTime.home ?? match.score.live?.home ?? null;
+        const awayScore = match.score.fullTime.away ?? match.score.live?.away ?? null;
+        const scoreStr = (homeScore !== null && awayScore !== null) ? `${homeScore} - ${awayScore}` : "- - -";
+
+        let points = "";
+        let isFinished = match.status === "FINISHED";
+        if(isFinished && prediction !== "-"){
+            const [pHome, pAway] = prediction.split("-").map(Number);
+            points = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
+        }
+
+        const row = document.createElement("tr");
+        if (isFinished && prediction !== "-") {
+            if(points === 12) row.classList.add("green");
+            else if(points > 0) row.classList.add("yellow");
+            else if(points === 0) row.classList.add("red");
+        }
+
+        const dateObj = new Date(match.utcDate);
+        const dayMonth = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+        const timeStr = dateObj.toLocaleTimeString("sv-SE", {hour: '2-digit', minute:'2-digit'});
+        const tvHtml = getBroadcasterHtml(match);
+
+        row.innerHTML = `
+        <td style="vertical-align: middle;">
+            <div class="date-cell-wrapper">
+                <span class="date-text">${dayMonth} ${timeStr}</span>
+                <span class="logo-container">${tvHtml}</span>
+            </div>
+        </td>
+        <td style="vertical-align: middle;">${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}</td>
+        <td style="vertical-align: middle;">${scoreStr}</td>
+        <td style="vertical-align: middle;">${prediction}</td>
+        <td style="vertical-align: middle;">${points}</td>
+        <td style="vertical-align: middle;">${getStatusSE(match.status)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function renderRanking() {
+    const tbody = document.getElementById("ranking-list");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    const ranking = Object.keys(allPredictions).map(user => ({ name: user, points: getUserTotalPoints(user) }));
+    ranking.sort((a, b) => b.points - a.points);
+    ranking.forEach((player, index) => {
+        const row = document.createElement("tr");
+        if(index === 0) row.style.fontWeight = "bold";
+        row.innerHTML = `<td>${index + 1}</td><td>${player.name}</td><td><strong>${player.points} p</strong></td>`;
+        tbody.appendChild(row);
+    });
+}
+
+function renderMatrix() {
+    const headerRow = document.getElementById("matrix-header");
+    const tbody = document.getElementById("matrix-body");
+    if (!headerRow || !tbody) return;
+
+    headerRow.innerHTML = "";
+    tbody.innerHTML = "";
+
+    const validMatches = allMatches.filter(m => m.stage === "GROUP_STAGE");
+    validMatches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+    if (validMatches.length === 0) return;
+
+    const thPlayer = document.createElement("th");
+    thPlayer.innerText = "Deltagare";
+    headerRow.appendChild(thPlayer);
+
+    validMatches.forEach(match => {
+        const th = document.createElement("th");
+        th.innerText = getMatchKey(match) || "???";
+        th.title = `${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}`;
+        headerRow.appendChild(th);
+    });
+
+    const users = Object.keys(allPredictions).sort();
+
+    users.forEach(user => {
+        const row = document.createElement("tr");
+        const userPredictions = allPredictions[user] || {};
+
+        const tdName = document.createElement("td");
+        tdName.innerText = user;
+        row.appendChild(tdName);
+
+        validMatches.forEach(match => {
+            const td = document.createElement("td");
+            const key = getMatchKey(match);
+            const prediction = getPredictionFromKey(userPredictions, key);
+            
+            const isFinished = match.status === "FINISHED";
+            const homeScore = match.score.fullTime.home ?? match.score.live?.home ?? null;
+            const awayScore = match.score.fullTime.away ?? match.score.live?.away ?? null;
+
+            if (prediction === "-") {
+                td.innerText = "-";
+            } else if (homeScore !== null && awayScore !== null) {
+                const [pHome, pAway] = prediction.split("-").map(Number);
+                const points = calculatePoints(homeScore, awayScore, pHome, pAway);
+                td.innerText = points;
+
+                if (isFinished) {
+                    if (points === 12) td.classList.add("matrix-cell-12");
+                    else if (points > 0) td.classList.add("matrix-cell-good");
+                    else if (points === 0) td.classList.add("matrix-cell-0");
+                }
+            } else {
+                td.innerText = "✔"; 
+                td.style.color = "var(--text-muted)";
+            }
+            row.appendChild(td);
+        });
+
+        tbody.appendChild(row);
+    });
+}
+
+async function loadMatches(){
+    try {
+        const response = await fetch(API_URL + "?_cb=" + new Date().getTime());
+        if (!response.ok) throw new Error(`API-status ${response.status}`);
+        const data = await response.json();
+        allMatches = data.matches || [];
+        filterMatches();
+        renderRanking();
+        
+        const viewMatrix = document.getElementById("view-matrix");
+        if(viewMatrix && !viewMatrix.classList.contains("hidden")) { 
+            renderMatrix(); 
+        }
+        
+        const luEl = document.getElementById("lastUpdated");
+        if (luEl) luEl.innerText = `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
+    } catch (error) {
+        const errEl = document.getElementById("lastUpdated");
+        if (errEl) errEl.innerText = `Match-fel: ${error.message}`;
+    }
+}
+
+function filterMatches() {
+    if (!allMatches || allMatches.length === 0) return;
+    const searchInput = document.getElementById("search");
+    const query = searchInput ? searchInput.value.toLowerCase() : "";
+    const filtered = allMatches.filter(match => {
+        const homeSE = getTeamNameSE(match.homeTeam?.name).toLowerCase();
+        const awaySE = getTeamNameSE(match.awayTeam?.name).toLowerCase();
+        return match.stage === "GROUP_STAGE" && (homeSE.includes(query) || awaySE.includes(query));
+    });
+    renderMatches(filtered);
+}
+
+function setupTabs() {
+    const btnMatches = document.getElementById("btn-matches");
+    const btnRanking = document.getElementById("btn-ranking");
+    const btnMatrix = document.getElementById("btn-matrix"); 
+    
+    const viewMatches = document.getElementById("view-matches");
+    const viewRanking = document.getElementById("view-ranking");
+    const viewMatrix = document.getElementById("view-matrix"); 
+    
+    const btnRules = document.getElementById("btn-rules");
+    const rulesModal = document.getElementById("rules-modal");
+    const closeBtn = document.querySelector(".close-btn");
+
+    function clearActive() {
+        if(btnMatches) btnMatches.classList.remove("active");
+        if(btnRanking) btnRanking.classList.remove("active");
+        if(btnMatrix) btnMatrix.classList.remove("active");
+        if(viewMatches) viewMatches.classList.add("hidden");
+        if(viewRanking) viewRanking.classList.add("hidden");
+        if(viewMatrix) viewMatrix.classList.add("hidden");
+    }
+
+    if(btnMatches && viewMatches) {
+        btnMatches.addEventListener("click", () => {
+            clearActive(); btnMatches.classList.add("active"); viewMatches.classList.remove("hidden");
+        });
+    }
+    
+    if(btnRanking && viewRanking) {
+        btnRanking.addEventListener("click", () => {
+            clearActive(); btnRanking.classList.add("active"); viewRanking.classList.remove("hidden");
+            renderRanking();
+        });
+    }
+
+    if(btnMatrix && viewMatrix) {
+        btnMatrix.addEventListener("click", () => {
+            clearActive(); btnMatrix.classList.add("active"); viewMatrix.classList.remove("hidden");
+            renderMatrix(); 
+        });
+    }
+
+    if(btnRules && rulesModal) {
+        btnRules.
