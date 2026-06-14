@@ -38,13 +38,14 @@ const nameToTlaMap = {
 };
 
 function getBroadcasterHtml(match) {
-    const matchDate = new Date(match.utcDate);
-    const day = matchDate.getDate();
-    if (day % 2 === 0) {
+    if (match.broadcaster === "svt") {
         return `<img src="svt.png" class="tv-logo" alt="SVT">`;
-    } else {
+    } else if (match.broadcaster === "tv4") {
         return `<img src="tv4.png" class="tv-logo" alt="TV4">`;
     }
+    
+    // Fallback om en match mot förmodan inte skulle matchas i kalendern
+    return `<span style="font-size:0.7rem; color:var(--text-muted)">Ej klart</span>`;
 }
 
 function getSwedishDayName(dateString) {
