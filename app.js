@@ -233,6 +233,7 @@ function renderMatrix() {
 
     if (validMatches.length === 0) return;
 
+    // Skapa en klickbar rubrik för deltagarkolumnen
     const thPlayer = document.createElement("th");
     thPlayer.style.cursor = "pointer";
     thPlayer.style.userSelect = "none";
@@ -245,13 +246,24 @@ function renderMatrix() {
     });
     headerRow.appendChild(thPlayer);
 
+    // HÄR BYGGER VI RUBRIKERNA MED MATCHKOD + RESULTAT UNDER
     validMatches.forEach(match => {
         const th = document.createElement("th");
-        th.innerText = getMatchKey(match) || "???";
+        const matchKey = getMatchKey(match) || "???";
+        
+        // Hämta mål om matchen har startat/avslutats
+        const homeScore = match.score.fullTime.home ?? match.score.live?.home ?? null;
+        const awayScore = match.score.fullTime.away ?? match.score.live?.away ?? null;
+        
+        // Om resultatet finns, lägg till det på en ny rad (<br>)
+        const scoreLine = (homeScore !== null && awayScore !== null) ? `<br><span style="color: var(--primary-color); font-weight: 700;">${homeScore}-${awayScore}</span>` : "<br><span style='color: var(--text-muted); font-weight: 400;'>-</span>";
+
+        th.innerHTML = `${matchKey}${scoreLine}`;
         th.title = `${getTeamNameSE(match.homeTeam?.name)} - ${getTeamNameSE(match.awayTeam?.name)}`;
         headerRow.appendChild(th);
     });
 
+    // Sortera deltagarna baserat på vilket läge som är aktivt
     const users = Object.keys(allPredictions).sort((a, b) => {
         if (matrixSortByRanking) {
             return getUserTotalPoints(b) - getUserTotalPoints(a);
@@ -277,14 +289,17 @@ function renderMatrix() {
             const homeScore = match.score.fullTime.home ?? match.score.live?.home ?? null;
             const awayScore = match.score.fullTime.away ?? match.score.live?.away ?? null;
 
+            // HÄR SÄTTER VI DEN MINIMERADE TOOLTIPEN (Bara personens tips)
+            if (prediction !== "-") {
+                td.title = `${user}: ${prediction}`;
+            }
+
             if (prediction === "-") {
                 td.innerText = "-";
             } else if (homeScore !== null && awayScore !== null) {
                 const [pHome, pAway] = prediction.split("-").map(Number);
                 const points = calculatePoints(homeScore, awayScore, pHome, pAway);
                 td.innerText = points;
-
-                td.title = `${user}s tips: ${prediction}\nResultat: ${homeScore}-${awayScore} (${points}p)`;
 
                 if (isFinished) {
                     if (points === 12) td.classList.add("matrix-cell-12");
@@ -294,7 +309,6 @@ function renderMatrix() {
             } else {
                 td.innerText = "✔"; 
                 td.style.color = "var(--text-muted)";
-                td.title = `${user}s tips: ${prediction}\nMatchen har inte startat`;
             }
             row.appendChild(td);
         });
@@ -302,7 +316,6 @@ function renderMatrix() {
         tbody.appendChild(row);
     });
 }
-
 async function loadMatches(){
     try {
         const response = await fetch(API_URL + "?_cb=" + new Date().getTime());
