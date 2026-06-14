@@ -63,11 +63,21 @@
             <hr class="modal-divider">
             <p>Poängen beräknas live baserat på ditt tips jämfört med det faktiska resultatet:</p>
             <ul class="modal-list">
-                <li><strong>12 poäng:</strong> Helt rätt resultat (t.ex. tippat 2-1, matchen blev 2-1).</li>
-                <li><strong>Rätt tecken (1X2):</strong> 10 poäng minus den totala måldifferensen.</li>
-                <li><strong>Fel tecken (1X2):</strong> 5 poäng minus den totala måldifferensen (lägst 0p).</li>
+                <li><strong>Rätt resultat:</strong> 12 poäng.</li>
+                
+                <li><strong>Rätt vinnare / fel resultat:</strong> 10 poäng minus fel antal mål.<br>
+                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 1-0, du tippar 2-0 = 9 poäng.</em></span></li>
+                
+                <li><strong>Tippat oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål.<br>
+                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 2-2, du tippar 1-1 = 8 poäng.</em></span></li>
+                
+                <li><strong>Fel vinnare:</strong> 5 poäng minus fel antal mål.<br>
+                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 2-1, du tippar 1-2 = 3 poäng.</em></span><br>
+                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 0-0, du tippar 1-2 = 2 poäng.</em></span></li>
             </ul>
-            <p class="modal-example"><em>Exempel: Du tippade 2-1 (Hemmavinst). Matchen slutade 1-0 (Hemmavinst). Du fick rätt tecken. Måldifferens: |2-1| + |1-0| = 2 mål ifrån. Poäng: 10 - 2 = 8 poäng.</em></p>
+            <p class="modal-example" style="font-weight: bold; text-align: center; color: var(--score-red-text); background-color: var(--score-red);">
+                ⚠️ Man kan aldrig få minuspoäng (lägsta poäng är 0 p).
+            </p>
         </div>
     </div>
 
