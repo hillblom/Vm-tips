@@ -287,3 +287,11 @@ td:nth-child(6) { font-weight: 400; color: var(--text-muted); font-size: 0.85rem
 .matrix-cell-12 { background-color: #d1fae5 !important; color: #065f46; font-weight: bold; }
 .matrix-cell-good { background-color: #fef3c7 !important; color: #92400e; }
 .matrix-cell-0 { background-color: #fee2e2 !important; color: #991b1b; opacity: 0.6; }
+
+/* Återställ fetstil för färgkodade celler i just matrisen */
+.matrix-table tr.yellow td,
+.matrix-table tr.green td,
+.matrix-table td.matrix-cell-good,
+.matrix-table td.matrix-cell-12 {
+    font-weight: normal !important;
+}
