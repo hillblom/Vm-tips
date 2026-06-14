@@ -168,7 +168,7 @@ th {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    min-width: 130px;
+    min-width: 150px; /* Ändrat från 130px till 150px för att rymma veckodagen säkert */
 }
 
 .date-text {
