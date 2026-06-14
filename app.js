@@ -284,6 +284,8 @@ function renderMatrix() {
                 const points = calculatePoints(homeScore, awayScore, pHome, pAway);
                 td.innerText = points;
 
+                td.title = `${user}s tips: ${prediction}\nResultat: ${homeScore}-${awayScore} (${points}p)`;
+
                 if (isFinished) {
                     if (points === 12) td.classList.add("matrix-cell-12");
                     else if (points > 0) td.classList.add("matrix-cell-good");
@@ -292,6 +294,7 @@ function renderMatrix() {
             } else {
                 td.innerText = "✔"; 
                 td.style.color = "var(--text-muted)";
+                td.title = `${user}s tips: ${prediction}\nMatchen har inte startat`;
             }
             row.appendChild(td);
         });
