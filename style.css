@@ -50,6 +50,7 @@ header h1 {
     margin-top: 2px;
 }
 
+/* --- CONTROLS & TABS --- */
 .controls-wrapper {
     background-color: var(--bg-card);
     padding: 10px 12px;
@@ -90,9 +91,17 @@ header h1 {
     color: #334155 !important;
 }
 
+/* Lägger deltagare och sök lag på samma rad */
 .filter-row {
     display: flex;
+    flex-direction: column; /* Staplas på mobiler */
     gap: 8px;
+}
+
+@media (min-width: 600px) {
+    .filter-row {
+        flex-direction: row; /* Hamnar sida vid sida på datorskärmar */
+    }
 }
 
 input[type="text"], select {
@@ -108,6 +117,7 @@ input[type="text"], select {
     display: none !important;
 }
 
+/* --- TABLES GENERAL --- */
 .table-wrapper {
     overflow-x: auto;
     width: 100%;
@@ -138,160 +148,7 @@ th {
     letter-spacing: 0.05em;
 }
 
-tr.green td { background-color: var(--score-green); color: var(--score-green-text); }
-tr.yellow td { background-color: var(--score-yellow); color: var(--score-yellow-text); }
-tr.red td { background-color: var(--score-red); color: var(--score-red-text); }
-
-td:nth-child(1) { font-weight: 400; }
-td:nth-child(2) { font-weight: 600; }
-td:nth-child(3), td:nth-child(4) { font-weight: 400; } 
-td:nth-child(5) { font-weight: 700; text-align: center; } 
-td:nth-child(6) { font-weight: 400; color: var(--text-muted); font-size: 0.85rem; }
-
-.date-cell-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-width: 130px;
-}
-
-.date-text {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    white-space: nowrap;
-}
-
-.logo-container {
-    display: flex;
-    align-items: center;
-    width: 32px;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.tv-logo {
-    max-height: 12px;
-    max-width: 32px;
-    object-fit: contain;
-    display: block;
-}
-
-/* --- POPUP / MODAL CSS --- */
-.modal {
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    transition: opacity 0.2s ease;
-}
-
-.modal-content {
-    background-color: var(--bg-card);
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 460px;
-    width: 100%;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    position: relative;
-    animation: modalShow 0.2s ease-out;
-}
-
-@keyframes modalShow {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.modal-content h2 {
-    font-size: 1.3rem;
-    color: var(--primary-color);
-    margin-bottom: 4px;
-}
-
-.modal-divider {
-    margin: 10px 0;
-    border: 0;
-    border-top: 1px solid var(--border-color);
-}
-
-.modal-content p {
-    font-size: 0.85rem;
-    color: var(--text-main);
-    line-height: 1.4;
-}
-
-.modal-list {
-    margin: 10px 0 10px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.85rem;
-}
-
-.modal-example {
-    margin-top: 12px;
-    font-size: 0.8rem !important;
-    color: var(--text-muted) !important;
-    background-color: #f1f5f9;
-    padding: 8px;
-    border-radius: 4px;
-}
-
-.close-btn {
-    position: absolute;
-    right: 14px;
-    top: 10px;
-    font-size: 1.6rem;
-    font-weight: bold;
-    color: var(--text-muted);
-    cursor: pointer;
-    line-height: 1;
-}
-
-.close-btn:hover {
-    color: var(--text-main);
-}
-
-/* --- MATRIS STYLING --- */
-.matrix-table th, .matrix-table td {
-    padding: 6px 8px;
-    font-size: 0.8rem;
-    text-align: center;
-    white-space: nowrap;
-    border-right: 1px solid var(--border-color);
-}
-
-/* Lås första kolumnen (namnen) så den syns när man skrollar i sidled */
-.matrix-table th:first-child, .matrix-table td:first-child {
-    position: sticky;
-    left: 0;
-    background-color: #f1f5f9;
-    font-weight: 600;
-    text-align: left;
-    z-index: 10;
-    border-right: 2px solid #cbd5e1;
-}
-
-.matrix-table th:first-child {
-    background-color: #e2e8f0;
-}
-
-/* Färgkoda poängcellerna lite diskret i matrisen */
-.matrix-cell-12 { background-color: #d1fae5 !important; color: #065f46; font-weight: bold; }
-.matrix-cell-good { background-color: #fef3c7 !important; color: #92400e; }
-.matrix-cell-0 { background-color: #fee2e2 !important; color: #991b1b; opacity: 0.6; }
-
-/* Återställ fetstil för färgkodade celler i just matrisen */
-.matrix-table tr.yellow td,
-.matrix-table tr.green td,
-.matrix-table td.matrix-cell-good,
-.matrix-table td.matrix-cell-12 {
-    font-weight: normal !important;
-}
+/* --- MATCHER-VY SPECIFIK TYPOGRAFI --- */
+#view-matches td:nth-child(1) { font-weight: 400; }
+#view-matches td:nth-child(2) { font-weight: 600; }
+#view-matches td:nth-child(3), #
