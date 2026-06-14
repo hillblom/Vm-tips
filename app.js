@@ -354,4 +354,35 @@ function setupTabs() {
     }
 
     if(btnRules && rulesModal) {
-        btnRules.
+        btnRules.addEventListener("click", (e) => {
+            e.preventDefault(); 
+            rulesModal.classList.remove("hidden");
+        });
+    }
+
+    if(closeBtn && rulesModal) {
+        closeBtn.addEventListener("click", () => { rulesModal.classList.add("hidden"); });
+    }
+    
+    if(rulesModal) {
+        window.addEventListener("click", (event) => { if (event.target === rulesModal) rulesModal.classList.add("hidden"); });
+    }
+}
+
+async function start(){
+    setupTabs();
+    await loadPredictions();
+    await loadMatches();
+    
+    const searchInput = document.getElementById("search");
+    if(searchInput) {
+        searchInput.addEventListener("input", filterMatches);
+    }
+    
+    const selector = document.getElementById("user-selector");
+    if (selector) {
+        selector.addEventListener("change", (e) => { currentUser = e.target.value; filterMatches(); });
+    }
+    setInterval(loadMatches, 30000);
+}
+start();
