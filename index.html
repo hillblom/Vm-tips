@@ -7,23 +7,22 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>⚽ VM-Tipset 2026</h1>
-            <div id="lastUpdated">Laddar...</div>
-        </header>
 
-        <div class="controls-wrapper">
-            <div class="tabs">
-    <button id="btn-matches" class="tab-btn active">Matcher</button>
-    <button id="btn-ranking" class="tab-btn">Rankinglista</button>
-    <button id="btn-matrix" class="tab-btn">Totalmatris</button> <button id="btn-rules" class="tab-btn info-btn">i</button>
-</div>
-            
-            <div id="filter-container" class="filter-row">
-                <select id="user-selector"></select>
-                <input type="text" id="search" placeholder="Sök lag...">
-            </div>
+    <div class="container">
+        <h1>⚽ VM-Tipset 2026</h1>
+        <div id="lastUpdated">Laddar...</div>
+
+        <div class="tabs">
+            <button id="btn-matches" class="tab-btn active">Matcher</button>
+            <button id="btn-ranking" class="tab-btn">Rankinglista</button>
+            <button id="btn-matrix" class="tab-btn">Totalmatris</button>
+            <button id="btn-rules" class="tab-btn info-btn">i</button>
+        </div>
+
+        <div class="controls">
+            <select id="user-selector">
+                </select>
+            <input type="text" id="search" placeholder="Sök lag...">
         </div>
 
         <div id="view-matches" class="table-wrapper">
@@ -38,7 +37,8 @@
                         <th>Status</th>
                     </tr>
                 </thead>
-                <tbody id="matches"></tbody>
+                <tbody id="matches">
+                    </tbody>
             </table>
         </div>
 
@@ -48,47 +48,38 @@
                     <tr>
                         <th>Plats</th>
                         <th>Deltagare</th>
-                        <th>Totalpoäng</th>
+                        <th>Poäng</th>
                     </tr>
                 </thead>
-                <tbody id="ranking-list"></tbody>
+                <tbody id="ranking-list">
+                    </tbody>
             </table>
         </div>
 
         <div id="view-matrix" class="table-wrapper hidden">
-    <table class="matrix-table">
-        <thead>
-            <tr id="matrix-header">
-                </tr>
-        </thead>
-        <tbody id="matrix-body">
-            </tbody>
-    </table>
-    </div>
-    </div>
+            <table class="matrix-table">
+                <thead>
+                    <tr id="matrix-header">
+                        </tr>
+                </thead>
+                <tbody id="matrix-body">
+                    </tbody>
+            </table>
+        </div>
 
-
-    <div id="rules-modal" class="modal hidden">
+    </div> <div id="rules-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2>Poängräkning</h2>
             <hr class="modal-divider">
-            <p>Poängen beräknas live baserat på ditt tips jämfört med det faktiska resultatet:</p>
             <ul class="modal-list">
                 <li><strong>Rätt resultat:</strong> 12 poäng.</li>
-                
-                <li><strong>Rätt vinnare / fel resultat:</strong> 10 poäng minus fel antal mål.<br>
-                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 1-0, du tippar 2-0 = 9 poäng.</em></span></li>
-                
-                <li><strong>Tippat oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål.<br>
-                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 2-2, du tippar 1-1 = 8 poäng.</em></span></li>
-                
-                <li><strong>Fel vinnare:</strong> 5 poäng minus fel antal mål.<br>
-                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 2-1, du tippar 1-2 = 3 poäng.</em></span><br>
-                <span style="color: var(--text-muted); font-size: 0.8rem;"><em>Exempel: Rätt resultat 0-0, du tippar 1-2 = 2 poäng.</em></span></li>
+                <li><strong>Rätt vinnare / fel resultat:</strong> 10 poäng minus fel antal mål.</li>
+                <li><strong>Tippat oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål.</li>
+                <li><strong>Fel vinnare:</strong> 5 poäng minus fel antal mål.</li>
             </ul>
-            <p class="modal-example" style="font-weight: bold; text-align: center; color: var(--score-red-text); background-color: var(--score-red);">
-                ⚠️ Man kan aldrig få minuspoäng (lägsta poäng är 0 p).
+            <p style="font-weight: bold; text-align: center; margin-top: 15px;">
+                ⚠️ Man kan aldrig få minuspoäng.
             </p>
         </div>
     </div>
