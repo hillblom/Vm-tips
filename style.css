@@ -14,16 +14,15 @@ body {
 
 /* Flexibel och dynamisk container */
 .container {
-    max-width: 800px; /* Standard snygg bredd för Matcher, Tabell, Regler */
+    max-width: 800px;
     margin: 0 auto;
     background: #fff;
     padding: 25px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: max-width 0.25s ease-in-out; /* Mjuk övergång vid flikbyte */
+    transition: max-width 0.2s ease-in-out;
 }
 
-/* Klass som aktiveras enbart när matris-fliken körs */
 .container.full-width {
     max-width: 100%;
 }
@@ -33,16 +32,18 @@ h1 {
     margin-bottom: 25px;
 }
 
-/* Fliksystemet */
+/* Fliksystemet - Centrerat och helt statiskt för att undvika rörelse */
 .main-tabs {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    justify-content: center; /* Centrerar flikraden på skärmen */
     align-items: center;
 }
 
 .tab-btn {
-    padding: 10px 20px;
+    width: 110px; /* Fast bredd så knapparna aldrig rör sig */
+    padding: 10px 0;
     font-size: 1rem;
     font-weight: bold;
     border: 1px solid var(--primary-color);
@@ -50,7 +51,15 @@ h1 {
     color: var(--primary-color);
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s;
+    text-align: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+/* Snygg cirkulär/kompakt form på info-knappen, men med låst läge */
+.tab-btn.info-btn {
+    width: 42px; 
+    font-style: italic;
+    font-family: "Georgia", serif;
 }
 
 .tab-btn.active, .tab-btn:hover {
@@ -155,7 +164,7 @@ h1 {
     text-align: left !important;
     background-color: #f8f9fa !important;
     position: sticky;
-    left: 35px; /* Placeras direkt efter Pos-kolumnen */
+    left: 35px;
     z-index: 2;
     font-weight: bold;
 }
@@ -167,7 +176,7 @@ h1 {
     text-align: left !important;
 }
 
-/* Matchrader färgindikatorer - Delas av både matcher och matris */
+/* Matchrader färgindikatorer */
 tr.green, td.green { background-color: #d4edda !important; color: #155724; font-weight: bold; text-align: center; }
 tr.yellow, td.yellow { background-color: #fff3cd !important; color: #856404; text-align: center; }
 tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-align: center; }
@@ -209,26 +218,30 @@ tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-alig
     margin-top: 15px;
 }
 
-/* Modals */
+/* Äkta Modal pop-up som svävar ovanpå */
 .hidden {
     display: none !important;
 }
 
 .modal {
     position: fixed;
-    z-index: 1000;
-    left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    z-index: 2000; /* Ligger över allt annat */
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%;
+    background-color: rgba(0,0,0,0.5); /* Tonar ner bakgrundsfliken */
 }
 
 .modal-content {
     background-color: #fff;
     margin: 10% auto;
     padding: 25px;
-    width: 60%;
-    max-width: 600px;
+    width: 80%;
+    max-width: 500px;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
 }
 
 .rules-text p {
@@ -237,7 +250,9 @@ tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-alig
 }
 
 .close-btn {
-    float: right;
+    position: absolute;
+    right: 20px;
+    top: 15px;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
