@@ -112,7 +112,6 @@ function getStatusSE(status) {
     }
 }
 
-// Beräknar totalpoäng samt räknar antal 12p och 0p för en specifik användare vid ett givet antal spelade matcher
 function getUserStatsAtMatchLimit(user, matchLimit = null) {
     let total = 0;
     let count12 = 0;
@@ -123,7 +122,6 @@ function getUserStatsAtMatchLimit(user, matchLimit = null) {
         .filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED")
         .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    // Om vi vill ha historisk data sätter vi en gräns på loopen
     const matchesToCount = matchLimit !== null ? finishedGroupMatches.slice(0, matchLimit) : finishedGroupMatches;
 
     matchesToCount.forEach(match => {
@@ -140,12 +138,33 @@ function getUserStatsAtMatchLimit(user, matchLimit = null) {
     return { totalPoints: total, p12: count12, p0: count0 };
 }
 
-// Behålls för bakåtkompatibilitet i matrisen och övriga funktioner
 function getUserTotalPoints(user) {
     return getUserStatsAtMatchLimit(user).totalPoints;
 }
 
-// Skapar de kompakta namnknapparna och hanterar localStorage-defaulting
+// Skapar deltagarknapparna dynamiskt och sätter sparad cookie/localStorage
+function renderUserButtons(users) {
+    const container = document.getElementById("user-buttons");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    users.forEach(user => {
+        const btn = document.createElement("button");
+        btn.classList.add("user-btn", "small");
+        if (user === currentUser) btn.classList.add("active");
+        btn.textContent = user;
+        
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".user-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentUser = user;
+            localStorage.setItem("selectedUser", user);
+            filterMatches();
+        });
+        container.appendChild(btn);
+    });
+}
+
 async function loadPredictions() {
     try {
         const response = await fetch("predictions.json?v=" + new Date().getTime());
@@ -154,7 +173,7 @@ async function loadPredictions() {
         const users = Object.keys(allPredictions);
         if (users.length === 0) throw new Error("predictions.json är tom");
         
-        // Hämta sparat namn från localStorage, annars ta första personen i listan
+        // Hämta sparat namn från localStorage
         const savedUser = localStorage.getItem("selectedUser");
         if (savedUser && users.includes(savedUser)) {
             currentUser = savedUser;
@@ -163,26 +182,7 @@ async function loadPredictions() {
             localStorage.setItem("selectedUser", currentUser);
         }
         
-        // Generera de små knapparna för deltagarna
-        const container = document.getElementById("user-buttons");
-        if (container) {
-            container.innerHTML = "";
-            users.forEach(user => {
-                const btn = document.createElement("button");
-                btn.classList.add("user-btn", "small");
-                if (user === currentUser) btn.classList.add("active");
-                btn.textContent = user;
-                
-                btn.addEventListener("click", () => {
-                    document.querySelectorAll(".user-btn").forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    currentUser = user;
-                    localStorage.setItem("selectedUser", user);
-                    filterMatches(); // Uppdaterar matchvyn för den valda personen
-                });
-                container.appendChild(btn);
-            });
-        }
+        renderUserButtons(users);
     } catch (error) {
         const errEl = document.getElementById("lastUpdated");
         if (errEl) errEl.innerText = `Tips-fel: ${error.message}`;
@@ -250,17 +250,14 @@ function renderRanking() {
     const finishedMatches = allMatches.filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED");
     const totalFinishedCount = finishedMatches.length;
 
-    // 1. Beräkna nuvarande data (fullständig tabell)
     let ranking = Object.keys(allPredictions).map(user => {
         const stats = getUserStatsAtMatchLimit(user);
         return { name: user, ...stats, currentRank: 0, oldRank: 0, trendDiff: 0 };
     });
 
-    // Sortera för att sätta nuvarande placering
     ranking.sort((a, b) => b.totalPoints - a.totalPoints || a.name.localeCompare(b.name, 'sv'));
     ranking.forEach((player, i) => player.currentRank = i + 1);
 
-    // 2. Beräkna historisk data (för 3 färdigspelade matcher sedan) för trendanalys
     if (totalFinishedCount >= 3) {
         let historicalRanking = Object.keys(allPredictions).map(user => {
             const histStats = getUserStatsAtMatchLimit(user, totalFinishedCount - 3);
@@ -271,25 +268,22 @@ function renderRanking() {
         ranking.forEach(player => {
             const histIdx = historicalRanking.findIndex(h => h.name === player.name);
             player.oldRank = histIdx + 1;
-            player.trendDiff = player.oldRank - player.currentRank; // Positivt = klättrat i listan
+            player.trendDiff = player.oldRank - player.currentRank;
         });
     }
 
-    // 3. Identifiera vem som klättrat resp. fallit ALLRA mest
-    let maxClimb = 1; // Krävs minst 1 klättrad placering för att få pil
-    let maxDrop = -1; // Krävs minst 1 tappad placering för att få pil
+    let maxClimb = 1;
+    let maxDrop = -1;
 
     ranking.forEach(p => {
         if (p.trendDiff > maxClimb) maxClimb = p.trendDiff;
         if (p.trendDiff < maxDrop) maxDrop = p.trendDiff;
     });
 
-    // 4. Skapa tabellraderna
     ranking.forEach((player, index) => {
         const row = document.createElement("tr");
         if(index === 0) row.style.fontWeight = "bold";
 
-        // Skapa trendpil intill namnet om man tillhör extremfallen de senaste 3 matcherna
         let trendHtml = "";
         if (totalFinishedCount >= 3) {
             if (player.trendDiff === maxClimb && maxClimb > 0) {
@@ -303,8 +297,8 @@ function renderRanking() {
             <td>${player.currentRank}</td>
             <td>${player.name}${trendHtml}</td>
             <td><strong>${player.totalPoints} p</strong></td>
-            <td style="text-align: center; color: #28a745; font-weight: bold;">${player.p12}</td>
-            <td style="text-align: center; color: #dc3545; font-weight: bold;">${player.p0}</td>
+            <td style="text-align: center; color: #2e7d32; font-weight: bold;">${player.p12}</td>
+            <td style="text-align: center; color: #c62828; font-weight: bold;">${player.p0}</td>
         `;
         tbody.appendChild(row);
     });
@@ -386,9 +380,9 @@ function renderMatrix() {
                 td.innerText = points;
 
                 if (isFinished) {
-                    if (points === 12) td.classList.add("matrix-cell-12");
-                    else if (points > 0) td.classList.add("matrix-cell-good");
-                    else if (points === 0) td.classList.add("matrix-cell-0");
+                    if (points === 12) td.classList.add("green");
+                    else if (points > 0) td.classList.add("yellow");
+                    else if (points === 0) td.classList.add("red");
                 }
             } else {
                 td.innerText = "✔"; 
@@ -424,7 +418,6 @@ async function loadMatches(){
 
 function filterMatches() {
     if (!allMatches || allMatches.length === 0) return;
-    // Sök lag borttagen, filter körs nu direkt på gruppspelsstadiet
     const filtered = allMatches.filter(match => match.stage === "GROUP_STAGE");
     renderMatches(filtered);
 }
