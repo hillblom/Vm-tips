@@ -4,6 +4,7 @@ let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
 let matrixSortByRanking = true; // true = sortera efter poäng (standard), false = sortera efter namn (A-Ö)
+let activeTabBeforeRules = "matches"; // Håller koll på vilken flik vi var på innan man öppnade "i"
 
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
@@ -150,7 +151,6 @@ async function loadPredictions() {
         const users = Object.keys(allPredictions);
         if (users.length === 0) throw new Error("predictions.json är tom");
         
-        // Hämta sparat namn från localStorage
         const savedUser = localStorage.getItem("selectedUser");
         if (savedUser && users.includes(savedUser)) {
             currentUser = savedUser;
@@ -159,7 +159,6 @@ async function loadPredictions() {
             localStorage.setItem("selectedUser", currentUser);
         }
         
-        // Bygg rullistan dynamiskt
         const selector = document.getElementById("user-selector");
         if (selector) {
             selector.innerHTML = "";
@@ -307,13 +306,11 @@ function renderMatrix() {
 
     if (validMatches.length === 0) return;
 
-    // 1. Skapa den nya "Pos"-rubriken
     const thPosHeader = document.createElement("th");
     thPosHeader.innerText = "Pos";
     thPosHeader.style.width = "40px";
     headerRow.appendChild(thPosHeader);
 
-    // 2. Skapa Deltagar-rubriken
     const thPlayer = document.createElement("th");
     thPlayer.style.cursor = "pointer";
     thPlayer.style.userSelect = "none";
@@ -326,7 +323,6 @@ function renderMatrix() {
     });
     headerRow.appendChild(thPlayer);
 
-    // 3. Skapa alla matchrubriker
     validMatches.forEach(match => {
         const th = document.createElement("th");
         const matchKey = getMatchKey(match) || "???";
@@ -341,14 +337,12 @@ function renderMatrix() {
         headerRow.appendChild(th);
     });
 
-    // Skapa rankingkartan för att kunna hämta placering (Pos) till matrisen
     const usersSortedByPoints = Object.keys(allPredictions).sort((a, b) => getUserTotalPoints(b) - getUserTotalPoints(a));
     const userToRankMap = {};
     usersSortedByPoints.forEach((user, idx) => {
         userToRankMap[user] = idx + 1;
     });
 
-    // Sortera användarna för matrisens rader
     const users = Object.keys(allPredictions).sort((a, b) => {
         if (matrixSortByRanking) {
             return getUserTotalPoints(b) - getUserTotalPoints(a);
@@ -361,19 +355,16 @@ function renderMatrix() {
         const row = document.createElement("tr");
         const userPredictions = allPredictions[user] || {};
 
-        // 1. Lägg till aktuellt rankingnummer (Pos)
         const tdPos = document.createElement("td");
         tdPos.innerText = userToRankMap[user] || "-";
         tdPos.classList.add("matrix-sticky-pos");
         row.appendChild(tdPos);
 
-        // 2. Lägg till Namn
         const tdName = document.createElement("td");
         tdName.innerText = user;
         tdName.classList.add("matrix-sticky-name");
         row.appendChild(tdName);
 
-        // 3. Fyll i alla matchpoäng
         validMatches.forEach(match => {
             const td = document.createElement("td");
             const key = getMatchKey(match);
@@ -390,6 +381,7 @@ function renderMatrix() {
             if (prediction === "-") {
                 td.innerText = "-";
             } else if (homeScore !== null && awayScore !== null) {
+                // Avslutad match: visa poängen
                 const [pHome, pAway] = prediction.split("-").map(Number);
                 const points = calculatePoints(homeScore, awayScore, pHome, pAway);
                 td.innerText = points;
@@ -400,8 +392,10 @@ function renderMatrix() {
                     else if (points === 0) td.className = "red";
                 }
             } else {
-                td.innerText = "✔"; 
-                td.style.color = "var(--text-muted)";
+                // Kommande/Pågående match: Visa faktiska tipset istället för en bock (t.ex. "(2-1)")
+                td.innerText = `(${prediction})`; 
+                td.style.color = "#777";
+                td.style.fontStyle = "italic";
                 td.style.textAlign = "center";
             }
             row.appendChild(td);
@@ -451,68 +445,73 @@ function setupTabs() {
     const closeBtn = document.querySelector(".close-btn");
     const container = document.getElementById("main-container");
 
-    function clearActive() {
+    function clearActiveTabs() {
         if(btnMatches) btnMatches.classList.remove("active");
         if(btnRanking) btnRanking.classList.remove("active");
         if(btnMatrix) btnMatrix.classList.remove("active");
-        if(btnRules) btnRules.classList.remove("active");
         
         if(viewMatches) viewMatches.classList.add("hidden");
         if(viewRanking) viewRanking.classList.add("hidden");
         if(viewMatrix) viewMatrix.classList.add("hidden");
         
-        // Återställ till standard maxbredd för alla flikar utom matrisen
         if(container) container.classList.remove("full-width");
     }
 
     if(btnMatches && viewMatches) {
         btnMatches.addEventListener("click", () => {
-            clearActive(); btnMatches.classList.add("active"); viewMatches.classList.remove("hidden");
+            clearActiveTabs(); 
+            btnRules.classList.remove("active");
+            btnMatches.classList.add("active"); 
+            viewMatches.classList.remove("hidden");
+            activeTabBeforeRules = "matches";
             filterMatches();
         });
     }
     
     if(btnRanking && viewRanking) {
         btnRanking.addEventListener("click", () => {
-            clearActive(); btnRanking.classList.add("active"); viewRanking.classList.remove("hidden");
+            clearActiveTabs(); 
+            btnRules.classList.remove("active");
+            btnRanking.classList.add("active"); 
+            viewRanking.classList.remove("hidden");
+            activeTabBeforeRules = "ranking";
             renderRanking();
         });
     }
 
     if(btnMatrix && viewMatrix) {
         btnMatrix.addEventListener("click", () => {
-            clearActive(); btnMatrix.classList.add("active"); viewMatrix.classList.remove("hidden");
-            // Aktivera fullbredd dynamiskt enbart för matrisvyn
+            clearActiveTabs(); 
+            btnRules.classList.remove("active");
+            btnMatrix.classList.add("active"); 
+            viewMatrix.classList.remove("hidden");
             if(container) container.classList.add("full-width");
+            activeTabBeforeRules = "matrix";
             renderMatrix(); 
         });
     }
 
+    // "i"-knappen (Regler): Visar modalen UTAN att dölja bakomliggande flik
     if(btnRules && rulesModal) {
         btnRules.addEventListener("click", (e) => {
             e.preventDefault(); 
-            clearActive();
             btnRules.classList.add("active");
             rulesModal.classList.remove("hidden");
         });
     }
 
-    if(closeBtn && rulesModal) {
-        closeBtn.addEventListener("click", () => { 
-            rulesModal.classList.add("hidden"); 
-            btnRules.classList.remove("active");
-            btnMatches.classList.add("active");
-            viewMatches.classList.remove("hidden");
-        });
+    // Stäng modalen och återställ enbart "i"-knappen
+    function closeRules() {
+        rulesModal.classList.add("hidden"); 
+        btnRules.classList.remove("active");
     }
+
+    if(closeBtn) closeBtn.addEventListener("click", closeRules);
     
     if(rulesModal) {
         window.addEventListener("click", (event) => { 
             if (event.target === rulesModal) {
-                rulesModal.classList.add("hidden"); 
-                btnRules.classList.remove("active");
-                btnMatches.classList.add("active");
-                viewMatches.classList.remove("hidden");
+                closeRules();
             }
         });
     }
