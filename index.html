@@ -19,15 +19,20 @@
         </div>
 
         <div class="user-selector-container">
-            <label for="user-selector" class="selector-label">Deltagare:</label>
-            <select id="user-selector" class="user-dropdown">
-                </select>
+            <div class="selector-group">
+                <label for="user-selector" class="selector-label">Deltagare:</label>
+                <select id="user-selector" class="user-dropdown"></select>
+            </div>
+            
+            <div id="match-filter-wrapper" class="filter-group">
+                <input type="checkbox" id="hide-finished-checkbox">
+                <label for="hide-finished-checkbox" class="filter-label">Dölj spelade matcher</label>
+            </div>
         </div>
 
         <hr>
 
         <div id="view-matches" class="tab-content">
-            <h2>Dina Tips & Resultat</h2>
             <table class="ranking-table">
                 <thead>
                     <tr>
