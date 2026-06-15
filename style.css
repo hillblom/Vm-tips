@@ -1,312 +1,191 @@
 :root {
-    --primary-color: #1e3a8a;
-    --bg-main: #f8fafc;
-    --bg-card: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --border-color: #e2e8f0;
-    
-    --score-green: #d1fae5;
-    --score-green-text: #065f46;
-    --score-yellow: #fef3c7;
-    --score-yellow-text: #92400e;
-    --score-red: #fee2e2;
-    --score-red-text: #991b1b;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    --primary-color: #007bff;
+    --primary-dark: #0056b3;
+    --text-muted: #6c757d;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    padding: 15px;
-    font-size: 0.9rem;
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+    color: #333;
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
-    padding-bottom: 20px;
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-header {
+h1 {
     text-align: center;
-    margin-bottom: 12px;
+    margin-bottom: 25px;
 }
 
-header h1 {
-    font-size: 1.8rem;
-    color: var(--primary-color);
-}
-
-#lastUpdated {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 2px;
-}
-
-/* --- CONTROLS & TABS --- */
-.controls-wrapper {
-    background-color: var(--bg-card);
-    padding: 10px 12px;
-    border-radius: 6px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    margin-bottom: 12px;
+/* Fliksystemet */
+.main-tabs {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.tabs {
-    display: flex;
-    gap: 8px;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
 }
 
 .tab-btn {
-    flex: 1;
-    padding: 8px;
-    font-weight: 600;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: 1px solid var(--primary-color);
+    background-color: #fff;
+    color: var(--primary-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active, .tab-btn:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+/* Kompakt Namnväljare */
+.user-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.selector-label {
+    font-weight: bold;
     font-size: 0.85rem;
-    background-color: #e2e8f0;
-    color: var(--text-muted);
-    border: none;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.user-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.user-btn.small {
+    padding: 5px 10px;
+    font-size: 0.82rem;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #333;
     border-radius: 4px;
     cursor: pointer;
+    transition: all 0.15s;
 }
 
-.tab-btn.active {
+.user-btn.small:hover {
+    background-color: #e9ecef;
+    border-color: #a1a1a1;
+}
+
+.user-btn.small.active {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: white;
+    border-color: var(--primary-dark);
+    font-weight: bold;
 }
 
-.info-btn {
-    flex: 0 0 auto !important;
-    width: 40px;
-    background-color: #cbd5e1 !important;
-    color: #334155 !important;
+/* Tabellstyling */
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
 }
 
-/* Flex-box för inputs */
-.filter-row {
+.ranking-table th, .ranking-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.ranking-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* Matchrader färgindikatorer */
+tr.green { background-color: #d4edda !important; }
+tr.yellow { background-color: #fff3cd !important; }
+tr.red { background-color: #f8d7da !important; }
+
+/* Trendpilar intill namnet */
+.trend-up {
+    color: #28a745;
+    font-size: 0.85em;
+    margin-left: 6px;
+    vertical-align: middle;
+    cursor: help;
+}
+
+.trend-down {
+    color: #dc3545;
+    font-size: 0.85em;
+    margin-left: 6px;
+    vertical-align: middle;
+    cursor: help;
+}
+
+/* TV-loggor */
+.date-cell-wrapper {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 8px;
 }
 
-@media (min-width: 600px) {
-    .filter-row {
-        flex-direction: row; /* Hamnar på samma rad på dator */
-    }
+.tv-logo {
+    height: 14px;
+    vertical-align: middle;
+    display: inline-block;
 }
 
-/* Specifik styling för fälten så de inte påverkar tabellens element */
-.filter-row select,
-.filter-row input[type="text"] {
-    width: 100% !important;
-    padding: 6px 10px;
-    font-size: 0.85rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: #fff;
+/* Matrisklasser */
+.matrix-wrapper {
+    overflow-x: auto;
 }
 
+.matrix-cell-12 { background-color: #28a745; color: white; text-align: center; font-weight: bold; }
+.matrix-cell-good { background-color: #ffeba5; text-align: center; }
+.matrix-cell-0 { background-color: #dc3545; color: white; text-align: center; }
+
+/* Modals & Hjälpklasser */
 .hidden {
     display: none !important;
 }
 
-/* --- TABLES GENERAL --- */
-.table-wrapper {
-    overflow-x: auto;
-    width: 100%;
-    background-color: var(--bg-card);
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-}
-
-th, td {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border-color);
-    line-height: 1.3;
-}
-
-th {
-    background-color: #f8fafc;
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-/* --- MATCHER-VY TYPOGRAFI --- */
-#view-matches td:nth-child(1) { font-weight: 400; }
-#view-matches td:nth-child(2) { font-weight: 600; }
-#view-matches td:nth-child(3), #view-matches td:nth-child(4) { font-weight: 400; } 
-#view-matches td:nth-child(5) { font-weight: 700; text-align: center; } 
-#view-matches td:nth-child(6) { font-weight: 400; color: var(--text-muted); font-size: 0.85rem; }
-
-/* Färgkodade rader för Matcher-vyn */
-#view-matches tr.green td { background-color: var(--score-green); color: var(--score-green-text); }
-#view-matches tr.yellow td { background-color: var(--score-yellow); color: var(--score-yellow-text); }
-#view-matches tr.red td { background-color: var(--score-red); color: var(--score-red-text); }
-
-/* --- CELL-KOMPONENTER (Låser storleken på loggorna) --- */
-.date-cell-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-width: 150px; /* Ändrat från 130px till 150px för att rymma veckodagen säkert */
-}
-
-.date-text {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    white-space: nowrap;
-}
-
-.logo-container {
-    display: flex;
-    align-items: center;
-    width: 32px;
-    max-width: 32px; /* Tvinga maxbredd */
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.tv-logo {
-    height: 12px !important;
-    width: 32px !important;
-    max-height: 12px !important;
-    max-width: 32px !important;
-    object-fit: contain;
-    display: block;
-}
-
-/* --- RANKING-VY --- */
-#view-ranking tbody tr:first-child {
-    background-color: #fffbeb;
-}
-
-/* --- TOTALMATRIS SPECIFIK --- */
-.matrix-table th, .matrix-table td {
-    padding: 6px 8px;
-    font-size: 0.8rem;
-    text-align: center;
-    white-space: nowrap;
-    border-right: 1px solid var(--border-color);
-}
-
-.matrix-table th:first-child, .matrix-table td:first-child {
-    position: sticky;
-    left: 0;
-    background-color: #f1f5f9;
-    font-weight: 600 !important;
-    text-align: left;
-    z-index: 10;
-    border-right: 2px solid #cbd5e1;
-}
-
-.matrix-table th:first-child {
-    background-color: #e2e8f0;
-}
-
-.matrix-table td.matrix-cell-12 { background-color: #d1fae5 !important; color: #065f46; }
-.matrix-table td.matrix-cell-good { background-color: #fef3c7 !important; color: #92400e; }
-.matrix-table td.matrix-cell-0 { background-color: #fee2e2 !important; color: #991b1b; opacity: 0.6; }
-
-.matrix-table th,
-.matrix-table td,
-.matrix-table tr.yellow td,
-.matrix-table tr.green td,
-.matrix-table tr.red td,
-.matrix-table td.matrix-cell-good,
-.matrix-table td.matrix-cell-12,
-.matrix-table td.matrix-cell-0 {
-    font-weight: normal;
-}
-
-/* --- POPUP / MODAL --- */
 .modal {
     position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    transition: opacity 0.2s ease;
+    z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .modal-content {
-    background-color: var(--bg-card);
+    background-color: #fff;
+    margin: 15% auto;
     padding: 20px;
-    border-radius: 8px;
-    max-width: 460px;
-    width: 100%;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    position: relative;
-    animation: modalShow 0.2s ease-out;
-}
-
-@keyframes modalShow {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.modal-content h2 {
-    font-size: 1.3rem;
-    color: var(--primary-color);
-    margin-bottom: 4px;
-}
-
-.modal-divider {
-    margin: 10px 0;
-    border: 0;
-    border-top: 1px solid var(--border-color);
-}
-
-.modal-content p {
-    font-size: 0.85rem;
-    color: var(--text-main);
-    line-height: 1.4;
-}
-
-.modal-list {
-    margin: 10px 0 10px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.85rem;
+    width: 50%;
+    border-radius: 6px;
 }
 
 .close-btn {
-    position: absolute;
-    right: 14px;
-    top: 10px;
-    font-size: 1.6rem;
+    float: right;
+    font-size: 28px;
     font-weight: bold;
-    color: var(--text-muted);
     cursor: pointer;
-    line-height: 1;
-}
-
-.close-btn:hover {
-    color: var(--text-main);
 }
