@@ -15,7 +15,7 @@
             <button id="btn-matches" class="tab-btn active">Matcher</button>
             <button id="btn-ranking" class="tab-btn">Tabell</button>
             <button id="btn-matrix" class="tab-btn">Matris</button>
-            <button id="btn-rules" class="tab-btn" style="margin-left: auto;">Regler</button>
+            <button id="btn-rules" class="info-circle-btn" title="Regler">i</button>
         </div>
 
         <div class="user-selector-container">
@@ -76,7 +76,13 @@
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2>Regler & Poängfördelning</h2>
-            <p>Exakt resultat ger 12p.</p>
+            <div class="rules-text">
+                <p><strong>Rätt resultat:</strong> 12 poäng</p>
+                <p><strong>Rätt vinnare/fel resultat:</strong> 10 poäng minus fel antal mål. <br><em>Exempel: rätt resultat 1-0, du tippar 2-0 = 9 poäng</em></p>
+                <p><strong>Fel vinnare:</strong> 5 poäng minus fel antal mål. <br><em>Exempel: rätt resultat 2-1, du tippar 1-2 = 3 poäng</em><br><em>Exempel: rätt resultat 0-0, du tippar 1-2 = 2 poäng</em></p>
+                <p><strong>Du tippar oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål. <br><em>Exempel: rätt resultat 2-2, du tippar 1-1 = 8 poäng</em></p>
+                <p style="margin-top: 15px; font-weight: bold; color: #dc3545;">Man får inte minuspoäng.</p>
+            </div>
         </div>
     </div>
 
