@@ -3,84 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VM-Tipset 2026</title>
+    <title>VM-Tips 2026</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
-        <h1>⚽ VM-Tipset 2026</h1>
-        <div id="lastUpdated">Laddar...</div>
+        <h1>VM-Tips 2026</h1>
 
-        <div class="tabs">
-            <button id="btn-matches" class="tab-btn active">Matcher</button>
-            <button id="btn-ranking" class="tab-btn">Topplista</button>
-            <button id="btn-matrix" class="tab-btn">Matris</button>
-            <button id="btn-rules" class="tab-btn info-btn">i</button>
+        <div class="main-tabs">
+            <button class="tab-btn active" onclick="switchTab('matcher')">Matcher</button>
+            <button class="tab-btn" onclick="switchTab('tabell')">Tabell</button>
+            <button class="tab-btn" onclick="switchTab('matris')">Matris</button>
         </div>
 
-        <div class="controls">
-            <select id="user-selector">
-                </select>
-            <input type="text" id="search" placeholder="Sök lag...">
+        <div class="user-selector-container">
+            <span class="selector-label">Deltagare:</span>
+            <div id="userButtons" class="user-buttons">
+                </div>
         </div>
 
-        <div id="view-matches" class="table-wrapper">
-            <table>
+        <hr>
+
+        <div id="matcherSection" class="tab-content active">
+            <h2>Dina Tips & Resultat</h2>
+            <div id="matchList"></div>
+        </div>
+
+        <div id="tabellSection" class="tab-content">
+            <h2>Total Ranking</h2>
+            <table class="ranking-table">
                 <thead>
                     <tr>
-                        <th>Datum</th>
-                        <th>Match</th>
-                        <th>Resultat</th>
-                        <th>Tips</th>
-                        <th>Poäng</th>
-                        <th>Status</th>
+                        <th style="width: 50px;">Pos</th>
+                        <th>Namn</th>
+                        <th>Totalt</th>
+                        <th style="width: 70px;">12p</th>
+                        <th style="width: 70px;">0p</th>
                     </tr>
                 </thead>
-                <tbody id="matches">
+                <tbody id="rankingBody">
                     </tbody>
             </table>
         </div>
 
-        <div id="view-ranking" class="table-wrapper hidden">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Plats</th>
-                        <th>Deltagare</th>
-                        <th>Poäng</th>
-                    </tr>
-                </thead>
-                <tbody id="ranking-list">
-                    </tbody>
-            </table>
-        </div>
-
-        <div id="view-matrix" class="table-wrapper hidden">
-            <table class="matrix-table">
-                <thead>
-                    <tr id="matrix-header">
-                        </tr>
-                </thead>
-                <tbody id="matrix-body">
-                    </tbody>
-            </table>
-        </div>
-
-    </div> <div id="rules-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Poängräkning</h2>
-            <hr class="modal-divider">
-            <ul class="modal-list">
-                <li><strong>Rätt resultat:</strong> 12 poäng.</li>
-                <li><strong>Rätt vinnare / fel resultat:</strong> 10 poäng minus fel antal mål.</li>
-                <li><strong>Tippat oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål.</li>
-                <li><strong>Fel vinnare:</strong> 5 poäng minus fel antal mål.</li>
-            </ul>
-            <p style="font-weight: bold; text-align: center; margin-top: 15px;">
-                ⚠️ Man kan aldrig få minuspoäng.
-            </p>
+        <div id="matrisSection" class="tab-content">
+            <h2>Tipsmatris</h2>
+            <div class="matrix-wrapper">
+                <table id="matrixTable">
+                    </table>
+            </div>
         </div>
     </div>
 
