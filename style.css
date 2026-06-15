@@ -51,6 +51,32 @@ h1 {
     color: #fff;
 }
 
+/* i-knapp (Regler) runda stilrena designen */
+.info-circle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid var(--text-muted);
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-left: auto;
+    padding: 0;
+}
+
+.info-circle-btn:hover {
+    background-color: var(--text-muted);
+    color: #fff;
+}
+
 /* Kompakt Namnväljare */
 .user-selector-container {
     display: flex;
@@ -119,10 +145,10 @@ h1 {
     font-weight: bold;
 }
 
-/* Matchrader färgindikatorer */
-tr.green { background-color: #d4edda !important; }
-tr.yellow { background-color: #fff3cd !important; }
-tr.red { background-color: #f8d7da !important; }
+/* Matchrader färgindikatorer - Delas av både matcher och matris */
+tr.green, td.green { background-color: #d4edda !important; color: #155724; font-weight: bold; text-align: center; }
+tr.yellow, td.yellow { background-color: #fff3cd !important; color: #856404; text-align: center; }
+tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-align: center; }
 
 /* Trendpilar intill namnet */
 .trend-up {
@@ -154,16 +180,15 @@ tr.red { background-color: #f8d7da !important; }
     display: inline-block;
 }
 
-/* Matrisklasser */
+/* Matrisklasser och sidledsbegränsning */
 .matrix-wrapper {
+    max-width: 100%;
     overflow-x: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
 }
 
-.matrix-cell-12 { background-color: #28a745; color: white; text-align: center; font-weight: bold; }
-.matrix-cell-good { background-color: #ffeba5; text-align: center; }
-.matrix-cell-0 { background-color: #dc3545; color: white; text-align: center; }
-
-/* Modals & Hjälpklasser */
+/* Modals */
 .hidden {
     display: none !important;
 }
@@ -177,10 +202,17 @@ tr.red { background-color: #f8d7da !important; }
 
 .modal-content {
     background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    width: 50%;
-    border-radius: 6px;
+    margin: 10% auto;
+    padding: 25px;
+    width: 60%;
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.rules-text p {
+    margin: 10px 0;
+    line-height: 1.5;
 }
 
 .close-btn {
@@ -188,4 +220,9 @@ tr.red { background-color: #f8d7da !important; }
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    color: #aaa;
+}
+
+.close-btn:hover {
+    color: #333;
 }
