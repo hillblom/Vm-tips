@@ -142,29 +142,6 @@ function getUserTotalPoints(user) {
     return getUserStatsAtMatchLimit(user).totalPoints;
 }
 
-// Skapar deltagarknapparna dynamiskt och sätter sparad cookie/localStorage
-function renderUserButtons(users) {
-    const container = document.getElementById("user-buttons");
-    if (!container) return;
-    container.innerHTML = "";
-    
-    users.forEach(user => {
-        const btn = document.createElement("button");
-        btn.classList.add("user-btn", "small");
-        if (user === currentUser) btn.classList.add("active");
-        btn.textContent = user;
-        
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".user-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            currentUser = user;
-            localStorage.setItem("selectedUser", user);
-            filterMatches();
-        });
-        container.appendChild(btn);
-    });
-}
-
 async function loadPredictions() {
     try {
         const response = await fetch("predictions.json?v=" + new Date().getTime());
@@ -182,7 +159,20 @@ async function loadPredictions() {
             localStorage.setItem("selectedUser", currentUser);
         }
         
-        renderUserButtons(users);
+        // Bygg rullistan dynamiskt
+        const selector = document.getElementById("user-selector");
+        if (selector) {
+            selector.innerHTML = "";
+            users.forEach(user => {
+                const option = document.createElement("option");
+                option.value = user;
+                option.innerText = user;
+                if (user === currentUser) {
+                    option.selected = true;
+                }
+                selector.appendChild(option);
+            });
+        }
     } catch (error) {
         const errEl = document.getElementById("lastUpdated");
         if (errEl) errEl.innerText = `Tips-fel: ${error.message}`;
@@ -287,9 +277,9 @@ function renderRanking() {
         let trendHtml = "";
         if (totalFinishedCount >= 3) {
             if (player.trendDiff === maxClimb && maxClimb > 0) {
-                trendHtml = ` <span class="trend-up" title="Klättrat mest de senaste 3 matcherna (+${player.trendDiff} placeringar!)">🔥 ▲</span>`;
+                trendHtml = ` <span class="trend-up" title="Klättrat mest de senaste 3 matcherna (+${player.trendDiff} placeringar!)">📈</span>`;
             } else if (player.trendDiff === maxDrop && maxDrop < 0) {
-                trendHtml = ` <span class="trend-down" title="Fallit mest de senaste 3 matcherna (${player.trendDiff} placeringar)">▼</span>`;
+                trendHtml = ` <span class="trend-down" title="Fallit mest de senaste 3 matcherna (${player.trendDiff} placeringar)">📉</span>`;
             }
         }
 
@@ -380,13 +370,14 @@ function renderMatrix() {
                 td.innerText = points;
 
                 if (isFinished) {
-                    if (points === 12) td.classList.add("green");
-                    else if (points > 0) td.classList.add("yellow");
-                    else if (points === 0) td.classList.add("red");
+                    if (points === 12) td.className = "green";
+                    else if (points > 0) td.className = "yellow";
+                    else if (points === 0) td.className = "red";
                 }
             } else {
                 td.innerText = "✔"; 
                 td.style.color = "var(--text-muted)";
+                td.style.textAlign = "center";
             }
             row.appendChild(td);
         });
@@ -426,12 +417,11 @@ function setupTabs() {
     const btnMatches = document.getElementById("btn-matches");
     const btnRanking = document.getElementById("btn-ranking");
     const btnMatrix = document.getElementById("btn-matrix"); 
+    const btnRules = document.getElementById("btn-rules");
     
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
     const viewMatrix = document.getElementById("view-matrix"); 
-    
-    const btnRules = document.getElementById("btn-rules");
     const rulesModal = document.getElementById("rules-modal");
     const closeBtn = document.querySelector(".close-btn");
 
@@ -439,6 +429,8 @@ function setupTabs() {
         if(btnMatches) btnMatches.classList.remove("active");
         if(btnRanking) btnRanking.classList.remove("active");
         if(btnMatrix) btnMatrix.classList.remove("active");
+        if(btnRules) btnRules.classList.remove("active");
+        
         if(viewMatches) viewMatches.classList.add("hidden");
         if(viewRanking) viewRanking.classList.add("hidden");
         if(viewMatrix) viewMatrix.classList.add("hidden");
@@ -468,16 +460,31 @@ function setupTabs() {
     if(btnRules && rulesModal) {
         btnRules.addEventListener("click", (e) => {
             e.preventDefault(); 
+            clearActive();
+            btnRules.classList.add("active");
             rulesModal.classList.remove("hidden");
         });
     }
 
     if(closeBtn && rulesModal) {
-        closeBtn.addEventListener("click", () => { rulesModal.classList.add("hidden"); });
+        closeBtn.addEventListener("click", () => { 
+            rulesModal.classList.add("hidden"); 
+            btnRules.classList.remove("active");
+            // Återgå till matchfliken när man stänger modalen
+            btnMatches.classList.add("active");
+            viewMatches.classList.remove("hidden");
+        });
     }
     
     if(rulesModal) {
-        window.addEventListener("click", (event) => { if (event.target === rulesModal) rulesModal.classList.add("hidden"); });
+        window.addEventListener("click", (event) => { 
+            if (event.target === rulesModal) {
+                rulesModal.classList.add("hidden"); 
+                btnRules.classList.remove("active");
+                btnMatches.classList.add("active");
+                viewMatches.classList.remove("hidden");
+            }
+        });
     }
 }
 
@@ -485,6 +492,17 @@ async function start(){
     setupTabs();
     await loadPredictions();
     await loadMatches();
+    
+    // Lyssna på ändringar i rullistan och spara valet
+    const selector = document.getElementById("user-selector");
+    if (selector) {
+        selector.addEventListener("change", (e) => {
+            currentUser = e.target.value;
+            localStorage.setItem("selectedUser", currentUser);
+            filterMatches();
+        });
+    }
+    
     setInterval(loadMatches, 30000);
 }
 start();
