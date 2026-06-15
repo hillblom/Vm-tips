@@ -391,7 +391,6 @@ function renderMatrix() {
                 const [pHome, pAway] = prediction.split("-").map(Number);
                 const points = calculatePoints(homeScore, awayScore, pHome, pAway);
                 
-                // Tooltip med enbart rent tips (ex: "2 - 1")
                 td.classList.add("matrix-tooltip-cell");
                 td.innerHTML = `${points}<span class="matrix-tooltip-box">${prediction.replace("-", " - ")}</span>`;
 
