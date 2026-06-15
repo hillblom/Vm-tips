@@ -12,8 +12,9 @@ body {
     color: #333;
 }
 
+/* Smalare och mer fokuserad container för att undvika för mycket luft */
 .container {
-    max-width: 1100px;
+    max-width: 800px;
     margin: 0 auto;
     background: #fff;
     padding: 25px;
@@ -26,7 +27,7 @@ h1 {
     margin-bottom: 25px;
 }
 
-/* Fliksystemet */
+/* Fliksystemet - Alla knappar har nu gemensam stil */
 .main-tabs {
     display: flex;
     gap: 10px;
@@ -51,33 +52,7 @@ h1 {
     color: #fff;
 }
 
-/* i-knapp (Regler) runda stilrena designen */
-.info-circle-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: #fff;
-    border: 2px solid var(--text-muted);
-    color: var(--text-muted);
-    font-size: 1rem;
-    font-weight: bold;
-    font-family: 'Georgia', serif;
-    font-style: italic;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    margin-left: auto;
-    padding: 0;
-}
-
-.info-circle-btn:hover {
-    background-color: var(--text-muted);
-    color: #fff;
-}
-
-/* Kompakt Namnväljare */
+/* Kompakt Namnväljare (Rullist) */
 .user-selector-container {
     display: flex;
     align-items: center;
@@ -98,33 +73,21 @@ h1 {
     white-space: nowrap;
 }
 
-.user-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.user-btn.small {
-    padding: 5px 10px;
-    font-size: 0.82rem;
+.user-dropdown {
+    padding: 6px 12px;
+    font-size: 0.95rem;
     border: 1px solid #ccc;
+    border-radius: 4px;
     background-color: #fff;
     color: #333;
-    border-radius: 4px;
+    outline: none;
     cursor: pointer;
-    transition: all 0.15s;
+    min-width: 160px;
+    transition: border-color 0.15s;
 }
 
-.user-btn.small:hover {
-    background-color: #e9ecef;
-    border-color: #a1a1a1;
-}
-
-.user-btn.small.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-dark);
-    font-weight: bold;
+.user-dropdown:focus {
+    border-color: var(--primary-color);
 }
 
 /* Tabellstyling */
@@ -145,23 +108,49 @@ h1 {
     font-weight: bold;
 }
 
+/* Matristabell med mindre typsnitt och centrerad text */
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem; /* Mindre typsnitt för bättre överblick */
+}
+
+.matrix-table th, .matrix-table td {
+    padding: 6px 4px;
+    text-align: center; /* Centrerar poäng och kryss */
+    border: 1px solid #dee2e6;
+    white-space: nowrap;
+}
+
+.matrix-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.matrix-table td:first-child, .matrix-table th:first-child {
+    text-align: left;
+    font-weight: bold;
+    background-color: #f8f9fa;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
 /* Matchrader färgindikatorer - Delas av både matcher och matris */
 tr.green, td.green { background-color: #d4edda !important; color: #155724; font-weight: bold; text-align: center; }
 tr.yellow, td.yellow { background-color: #fff3cd !important; color: #856404; text-align: center; }
 tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-align: center; }
 
-/* Trendpilar intill namnet */
+/* Större börsinspirerade Trendpilar */
 .trend-up {
-    color: #28a745;
-    font-size: 0.85em;
+    font-size: 1.2rem;
     margin-left: 6px;
     vertical-align: middle;
     cursor: help;
 }
 
 .trend-down {
-    color: #dc3545;
-    font-size: 0.85em;
+    font-size: 1.2rem;
     margin-left: 6px;
     vertical-align: middle;
     cursor: help;
@@ -186,6 +175,7 @@ tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-alig
     overflow-x: auto;
     border: 1px solid #dee2e6;
     border-radius: 4px;
+    margin-top: 15px;
 }
 
 /* Modals */
