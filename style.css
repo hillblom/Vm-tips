@@ -12,14 +12,20 @@ body {
     color: #333;
 }
 
-/* Smalare och mer fokuserad container för att undvika för mycket luft */
+/* Flexibel och dynamisk container */
 .container {
-    max-width: 800px;
+    max-width: 800px; /* Standard snygg bredd för Matcher, Tabell, Regler */
     margin: 0 auto;
     background: #fff;
     padding: 25px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: max-width 0.25s ease-in-out; /* Mjuk övergång vid flikbyte */
+}
+
+/* Klass som aktiveras enbart när matris-fliken körs */
+.container.full-width {
+    max-width: 100%;
 }
 
 h1 {
@@ -27,7 +33,7 @@ h1 {
     margin-bottom: 25px;
 }
 
-/* Fliksystemet - Alla knappar har nu gemensam stil */
+/* Fliksystemet */
 .main-tabs {
     display: flex;
     gap: 10px;
@@ -112,12 +118,12 @@ h1 {
 .matrix-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.78rem; /* Mindre typsnitt för bättre överblick */
+    font-size: 0.78rem;
 }
 
 .matrix-table th, .matrix-table td {
     padding: 6px 4px;
-    text-align: center; /* Centrerar poäng och kryss */
+    text-align: center;
     border: 1px solid #dee2e6;
     white-space: nowrap;
 }
@@ -127,13 +133,38 @@ h1 {
     font-weight: bold;
 }
 
-.matrix-table td:first-child, .matrix-table th:first-child {
-    text-align: left;
-    font-weight: bold;
-    background-color: #f8f9fa;
+/* Låser fast Pos-kolumnen vid sidoscroll */
+.matrix-sticky-pos {
+    text-align: center !important;
+    background-color: #f0f0f0 !important;
     position: sticky;
     left: 0;
+    z-index: 3;
+    font-weight: bold;
+    width: 35px;
+}
+.matrix-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    background-color: #e9ecef;
+}
+
+/* Låser fast Deltagarnamn-kolumnen vid sidoscroll */
+.matrix-sticky-name {
+    text-align: left !important;
+    background-color: #f8f9fa !important;
+    position: sticky;
+    left: 35px; /* Placeras direkt efter Pos-kolumnen */
     z-index: 2;
+    font-weight: bold;
+}
+.matrix-table th:nth-child(2) {
+    position: sticky;
+    left: 35px;
+    z-index: 3;
+    background-color: #f8f9fa;
+    text-align: left !important;
 }
 
 /* Matchrader färgindikatorer - Delas av både matcher och matris */
@@ -169,7 +200,7 @@ tr.red, td.red { background-color: #f8d7da !important; color: #721c24; text-alig
     display: inline-block;
 }
 
-/* Matrisklasser och sidledsbegränsning */
+/* Matriswrapper och sidledsbegränsning */
 .matrix-wrapper {
     max-width: 100%;
     overflow-x: auto;
