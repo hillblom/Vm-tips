@@ -3,8 +3,9 @@ const API_URL = "https://vm-predictor.stefan-hillblom.workers.dev/";
 let allPredictions = {};
 let allMatches = [];
 let currentUser = "";
-let matrixSortByRanking = true; // true = sortera efter poäng (standard), false = sortera efter namn (A-Ö)
-let activeTabBeforeRules = "matches"; // Håller koll på vilken flik vi var på innan man öppnade "i"
+let matrixSortByRanking = true; 
+let activeTabBeforeRules = "matches"; 
+let hideFinishedMatches = false; 
 
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
@@ -187,6 +188,8 @@ function renderMatches(matchesToRender) {
     matchesToRender.forEach(match => {
         if (match.stage !== "GROUP_STAGE") return;
         
+        if (hideFinishedMatches && match.status === "FINISHED") return;
+
         const key = getMatchKey(match);
         const prediction = getPredictionFromKey(userPredictions, key);
         
@@ -273,6 +276,10 @@ function renderRanking() {
         const row = document.createElement("tr");
         if(index === 0) row.style.fontWeight = "bold";
 
+        if (player.name === currentUser) {
+            row.classList.add("highlight-user-row");
+        }
+
         let trendHtml = "";
         if (totalFinishedCount >= 3) {
             if (player.trendDiff === maxClimb && maxClimb > 0) {
@@ -355,6 +362,10 @@ function renderMatrix() {
         const row = document.createElement("tr");
         const userPredictions = allPredictions[user] || {};
 
+        if (user === currentUser) {
+            row.classList.add("highlight-user-row");
+        }
+
         const tdPos = document.createElement("td");
         tdPos.innerText = userToRankMap[user] || "-";
         tdPos.classList.add("matrix-sticky-pos");
@@ -374,25 +385,22 @@ function renderMatrix() {
             const homeScore = match.score.fullTime.home ?? match.score.live?.home ?? null;
             const awayScore = match.score.fullTime.away ?? match.score.live?.away ?? null;
 
-            if (prediction !== "-") {
-                td.title = `${user}: ${prediction}`;
-            }
-
             if (prediction === "-") {
                 td.innerText = "-";
             } else if (homeScore !== null && awayScore !== null) {
-                // Avslutad match: visa poängen
                 const [pHome, pAway] = prediction.split("-").map(Number);
                 const points = calculatePoints(homeScore, awayScore, pHome, pAway);
-                td.innerText = points;
+                
+                // Tooltip med enbart rent tips (ex: "2 - 1")
+                td.classList.add("matrix-tooltip-cell");
+                td.innerHTML = `${points}<span class="matrix-tooltip-box">${prediction.replace("-", " - ")}</span>`;
 
                 if (isFinished) {
-                    if (points === 12) td.className = "green";
-                    else if (points > 0) td.className = "yellow";
-                    else if (points === 0) td.className = "red";
+                    if (points === 12) td.className += " green";
+                    else if (points > 0) td.className += " yellow";
+                    else if (points === 0) td.className += " red";
                 }
             } else {
-                // Kommande/Pågående match: Visa faktiska tipset istället för en bock (t.ex. "(2-1)")
                 td.innerText = `(${prediction})`; 
                 td.style.color = "#777";
                 td.style.fontStyle = "italic";
@@ -444,6 +452,7 @@ function setupTabs() {
     const rulesModal = document.getElementById("rules-modal");
     const closeBtn = document.querySelector(".close-btn");
     const container = document.getElementById("main-container");
+    const filterWrapper = document.getElementById("match-filter-wrapper");
 
     function clearActiveTabs() {
         if(btnMatches) btnMatches.classList.remove("active");
@@ -455,6 +464,7 @@ function setupTabs() {
         if(viewMatrix) viewMatrix.classList.add("hidden");
         
         if(container) container.classList.remove("full-width");
+        if(filterWrapper) filterWrapper.style.display = "none";
     }
 
     if(btnMatches && viewMatches) {
@@ -463,6 +473,7 @@ function setupTabs() {
             btnRules.classList.remove("active");
             btnMatches.classList.add("active"); 
             viewMatches.classList.remove("hidden");
+            if(filterWrapper) filterWrapper.style.display = "flex";
             activeTabBeforeRules = "matches";
             filterMatches();
         });
@@ -491,7 +502,6 @@ function setupTabs() {
         });
     }
 
-    // "i"-knappen (Regler): Visar modalen UTAN att dölja bakomliggande flik
     if(btnRules && rulesModal) {
         btnRules.addEventListener("click", (e) => {
             e.preventDefault(); 
@@ -500,7 +510,6 @@ function setupTabs() {
         });
     }
 
-    // Stäng modalen och återställ enbart "i"-knappen
     function closeRules() {
         rulesModal.classList.add("hidden"); 
         btnRules.classList.remove("active");
@@ -519,6 +528,19 @@ function setupTabs() {
 
 async function start(){
     setupTabs();
+    
+    const savedFilter = localStorage.getItem("hideFinishedMatches") === "true";
+    hideFinishedMatches = savedFilter;
+    const filterCheckbox = document.getElementById("hide-finished-checkbox");
+    if(filterCheckbox) {
+        filterCheckbox.checked = hideFinishedMatches;
+        filterCheckbox.addEventListener("change", (e) => {
+            hideFinishedMatches = e.target.checked;
+            localStorage.setItem("hideFinishedMatches", hideFinishedMatches);
+            filterMatches();
+        });
+    }
+
     await loadPredictions();
     await loadMatches();
     
@@ -527,7 +549,12 @@ async function start(){
         selector.addEventListener("change", (e) => {
             currentUser = e.target.value;
             localStorage.setItem("selectedUser", currentUser);
+            
             filterMatches();
+            const viewRanking = document.getElementById("view-ranking");
+            if(viewRanking && !viewRanking.classList.contains("hidden")) renderRanking();
+            const viewMatrix = document.getElementById("view-matrix");
+            if(viewMatrix && !viewMatrix.classList.contains("hidden")) renderMatrix();
         });
     }
     
