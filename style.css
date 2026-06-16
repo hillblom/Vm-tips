@@ -278,6 +278,25 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
 
+/* Låser fast "Pos"-rubriken i krysset uppe till vänster */
+.matrix-table th.matrix-sticky-pos {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 15; /* Högre z-index så den ligger överst i hörnet */
+    background-color: #f8f9fa; /* Matchar tabellens th-bakgrund */
+}
+
+/* Låser fast "Deltagare ↕️"-rubriken uppe till vänster */
+.matrix-table th.matrix-sticky-name {
+    position: sticky;
+    left: 35px; /* Samma left som td.matrix-sticky-name */
+    top: 0;
+    z-index: 15; /* Högre z-index */
+    background-color: #f8f9fa;
+    text-align: left !important;
+}
+
 .matrix-table tr:hover td {
     background-color: #f1f3f5;
 }
@@ -528,5 +547,51 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     }
     .ranking-main-table, .ranking-side-panel {
         width: 100%;
+    }
+}
+
+/* Kompakt layout för matchlistan på mobiler (iPhone etc.) */
+@media (max-width: 480px) {
+    /* Minska radhöjden drastiskt i tabeller inuti matchvyn */
+    #view-matches td, 
+    #view-matches th {
+        padding: 4px 6px !important; /* Minimal padding för tunna rader */
+        font-size: 0.8rem !important;
+        vertical-align: middle;
+    }
+
+    /* FIX FÖR DATUM, TID OCH LOGO I SAMMA CELL */
+    #view-matches td:first-child {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important; /* Datum/tid till vänster, logga till höger */
+        gap: 6px !important;
+        min-width: 95px !important; /* Ger tillräckligt med bredd för uppdelningen */
+        border-bottom: none !important; /* Förhindrar dubbla linjer pga flex */
+    }
+
+    /* Skapar en egen behållare för texten (om den inte redan finns, skapas den via flex) */
+    #view-matches td:first-child::before {
+        content: ""; /* Detta tvingar texten att hålla ihop om det behövs */
+    }
+
+    /* TV-logotypen skjuts till högerkanten och hålls kompakt */
+    #view-matches .tv-logo,
+    #view-matches td:first-child img {
+        height: 11px !important;
+        width: auto !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important; /* Hindrar loggan från att tryckas ihop */
+    }
+
+    /* Om din JavaScript genererar datum och tid separerat med t.ex. ett <br> eller i en container, 
+       ser detta till att de hamnar på max 2 rader i sin stapel */
+    #view-matches td:first-child {
+        line-height: 1.1 !important;
+    }
+
+    /* Krymp texten en aning på lagnamnen vid behov */
+    #view-matches strong {
+        font-size: 0.85rem !important;
     }
 }

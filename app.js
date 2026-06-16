@@ -277,7 +277,7 @@ function renderMatrix() {
         .filter(m => !hideFinishedMatches || m.status !== "FINISHED")
         .sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    let headerHtml = "<th>Pos</th><th style='cursor: pointer; user-select: none;' onclick='toggleMatrixSort()'>Deltagare ↕️</th>";
+    let headerHtml = "<th class='matrix-sticky-pos'>Pos</th><th class='matrix-sticky-name' style='cursor: pointer; user-select: none;' onclick='toggleMatrixSort()'>Deltagare ↕️</th>";
     matches.forEach(m => {
         const key = getMatchKey(m);
         const homeFullName = teamNamesSE[m.homeTeam.name] || m.homeTeam.name;
