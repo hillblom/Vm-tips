@@ -45,8 +45,14 @@ tr.highlight-user-row { background: var(--highlight-bg) !important; font-weight:
 .matrix-sticky-pos { position: sticky; left: 0; background: #eee !important; z-index: 2; width: 30px; }
 .matrix-sticky-name { position: sticky; left: 30px; background: #f9f9f9 !important; z-index: 2; text-align: left !important; min-width: 100px; }
 
-.chart-wrapper { height: 500px; margin-top: 20px; }
-
+/* Gör att grafen fyller ut resten av skärmens höjd dynamiskt */
+.chart-wrapper {
+    height: calc(100vh - 280px); /* Justerar höjden dynamiskt efter webbläsarfönstret */
+    min-height: 400px;           /* Säkerställer att den inte blir för platt på små skärmar */
+    margin-top: 20px;
+    width: 100%;
+    position: relative;          /* Krävs för att Chart.js ska kunna skala korrekt */
+}
 .hidden { display: none !important; }
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; }
 .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; }
