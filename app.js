@@ -44,26 +44,53 @@ function getBroadcasterHtml(match) {
     return `<span style="font-size:0.7rem; color:var(--text-muted)">-</span>`;
 }
 
-// Skapar en unik matchnyckel oberoende av vilket lag som står som hemma/borta i API:et
 function getMatchKey(match) {
     const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
     const awayTLA = nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???";
-    
-    // Sorterar förkortningarna alfabetiskt så att "KSA-URY" och "URY-KSA" ger samma unika nyckel
-    const ordered = [homeTLA, awayTLA].sort();
-    return `${ordered[0]}-${ordered[1]}`;
+    return `${homeTLA}-${awayTLA}`;
 }
 
 function getPredictionFromKey(userPredictions, key) {
     if (!userPredictions || !key) return "-";
-    return userPredictions[key] || "-";
+    if (userPredictions[key]) return userPredictions[key];
+    
+    const [teamA, teamB] = key.split("-");
+    const reversedKey = `${teamB}-${teamA}`;
+    if (userPredictions[reversedKey]) return userPredictions[reversedKey];
+    
+    return "-";
 }
 
-function calculatePoints(actualHome, actualAway, predictedHome, predictedAway){
-    if(actualHome === predictedHome && actualAway === predictedAway) return 12;
-    const diff = Math.abs(actualHome - predictedHome) + Math.abs(actualAway - predictedAway);
+function calculatePointsAdvanced(match, predictionStr) {
+    if (!predictionStr || predictionStr === "-") return 0;
+
+    const apiHomeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
+    const apiAwayTLA = nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???";
+
+    const normalKey = `${apiHomeTLA}-${apiAwayTLA}`;
+    const reversedKey = `${apiAwayTLA}-${apiHomeTLA}`;
+    
+    let predHomeTLA = apiHomeTLA;
+    let predAwayTLA = apiAwayTLA;
+    let [predHomeScore, predAwayScore] = predictionStr.split("-").map(Number);
+
+    if (!allPredictions[currentUser]?.[normalKey] && allPredictions[currentUser]?.[reversedKey]) {
+        predHomeTLA = apiAwayTLA;
+        predAwayTLA = apiHomeTLA;
+    }
+
+    const actualHome = match.score.fullTime.home;
+    const actualAway = match.score.fullTime.away;
+
+    const pHome = (predHomeTLA === apiHomeTLA) ? predHomeScore : predAwayScore;
+    const pAway = (predAwayTLA === apiAwayTLA) ? predAwayScore : predHomeScore;
+
+    if (actualHome === pHome && actualAway === pAway) return 12;
+
+    const diff = Math.abs(actualHome - pHome) + Math.abs(actualAway - pAway);
     const actualOutcome = actualHome > actualAway ? "H" : (actualHome < actualAway ? "A" : "D");
-    const predictedOutcome = predictedHome > predictedAway ? "H" : (predictedHome < predictedAway ? "A" : "D");
+    const predictedOutcome = pHome > pAway ? "H" : (pHome < pAway ? "A" : "D");
+
     let points = actualOutcome === predictedOutcome ? 10 - diff : 5 - diff;
     return Math.max(0, points);
 }
@@ -75,26 +102,16 @@ function getUserStatsAtMatchLimit(user, limit = null) {
     const toCount = limit !== null ? finished.slice(0, limit) : finished;
 
     toCount.forEach(match => {
-        const prediction = getPredictionFromKey(userPredictions, getMatchKey(match));
+        const key = getMatchKey(match);
+        const prediction = getPredictionFromKey(userPredictions, key);
         if (prediction !== "-") {
-            const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
-            const ordered = [homeTLA, (nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???")].sort();
-            
-            let [pH, pA] = prediction.split("-").map(Number);
-            if (homeTLA !== ordered[0]) {
-                [pH, pA] = [pA, pH];
-            }
-            const pts = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
+            const pts = calculatePointsAdvanced(match, prediction);
             totalPoints += pts;
             if (pts === 12) p12++;
             if (pts === 0) p0++;
         }
     });
     return { totalPoints, p12, p0 };
-}
-
-function getTrendIconsHtml(user, finishedMatches) {
-    return ""; 
 }
 
 function renderMatches() {
@@ -113,15 +130,7 @@ function renderMatches() {
         
         let points = "";
         if(match.status === "FINISHED" && prediction !== "-"){
-            const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
-            const ordered = [homeTLA, (nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???")].sort();
-            
-            let [pH, pA] = prediction.split("-").map(Number);
-            if (homeTLA !== ordered[0]) {
-                [pH, pA] = [pA, pH];
-            }
-
-            points = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
+            points = calculatePointsAdvanced(match, prediction);
         }
 
         const row = document.createElement("tr");
@@ -132,8 +141,10 @@ function renderMatches() {
         }
 
         const date = new Date(match.utcDate);
+        const dateString = date.toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+
         row.innerHTML = `
-            <td>${date.toLocaleDateString('sv-SE')} ${getBroadcasterHtml(match)}</td>
+            <td>${dateString} ${getBroadcasterHtml(match)}</td>
             <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
             <td>${homeScore} - ${awayScore}</td>
             <td>${prediction}</td>
@@ -150,6 +161,7 @@ function renderRanking() {
     tbody.innerHTML = "";
 
     const finishedMatches = allMatches.filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
+    const allGroupMatches = allMatches.filter(m => m.stage === "GROUP_STAGE");
     const users = Object.keys(allPredictions);
 
     let ranking = users.map(user => {
@@ -159,37 +171,60 @@ function renderRanking() {
 
     ranking.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
+    // --- NYTT: UPPDATERA INFOPANELEN (Matcher kvar & Omgångar) ---
+    // Räkna ut ett ungefärligt omgångsnummer (t.ex. antal spelade matcher dividerat med hur många matcher det är per omgång, eller bara antal spelade matcher)
+    // Här sätter vi antal spelade gruppspelsmatcher som en indikator, eller ändra till din egen logik:
+    const playedCount = finishedMatches.length;
+    const totalCount = allGroupMatches.length;
+    const leftCount = totalCount - playedCount;
+
+    document.getElementById("stats-played-rounds").innerText = playedCount;
+    document.getElementById("stats-matches-left").innerText = leftCount;
+
+
+    // Trend-logik (Befintlig)
     const trendMap = {};
     let maxClimb = 0; 
     let maxDrop = 0;  
+    let raketName = "Ingen";
+    let fallName = "Ingen";
 
     if (finishedMatches.length > 0) {
         const currentRanks = {};
-        ranking.forEach((player, idx) => {
-            currentRanks[player.name] = idx + 1;
-        });
+        ranking.forEach((player, idx) => { currentRanks[player.name] = idx + 1; });
 
-        const limit = Math.max(0, finishedMatches.length - 3);
+        // Titta 3 matcher bakåt för trenden (precis som i din tidigare kod)
+        const limit = Math.max(0, finishedMatches.length - 1); // Ändrat till -1 för att se förändringen sedan EXAKT förra matchen
         const oldScores = users.map(u => ({ name: u, pts: getUserStatsAtMatchLimit(u, limit).totalPoints }));
         oldScores.sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
         
         const oldRanks = {};
-        oldScores.forEach((player, idx) => {
-            oldRanks[player.name] = idx + 1;
-        });
+        oldScores.forEach((player, idx) => { oldRanks[player.name] = idx + 1; });
 
         users.forEach(user => {
             const current = currentRanks[user];
             const old = oldRanks[user];
-            const diff = old - current; 
+            const diff = old - current; // Positivt = klättrat platser
 
             trendMap[user] = diff;
 
-            if (diff > 0 && diff > maxClimb) maxClimb = diff;
-            if (diff < 0 && Math.abs(diff) > maxDrop) maxDrop = Math.abs(diff);
+            if (diff > maxClimb) {
+                maxClimb = diff;
+                raketName = user;
+            }
+            if (diff < maxDrop) {
+                maxDrop = diff;
+                fallName = user;
+            }
         });
     }
 
+    // --- NYTT: SÄTT TEXT FÖR RAKET OCH FRITT FALL ---
+    document.getElementById("stats-max-climb").innerText = maxClimb > 0 ? `${raketName} (+${maxClimb})` : "Ingen förändring";
+    document.getElementById("stats-max-drop").innerText = maxDrop < 0 ? `${fallName} (${maxDrop})` : "Ingen förändring";
+
+
+    // Rendera själva tabellraderna till vänster (Befintlig logik)
     ranking.forEach((player, i) => {
         const row = document.createElement("tr");
         if (player.name === currentUser) row.classList.add("highlight-user-row");
@@ -200,19 +235,14 @@ function renderRanking() {
         if (finishedMatches.length > 0 && userDiff !== 0) {
             if (userDiff > 0 && userDiff === maxClimb) {
                 trendHtml = `<span class="trend-icon trend-green" title="Klättrat mest: +${userDiff} platser">▲</span>`;
-            } else if (userDiff < 0 && Math.abs(userDiff) === maxDrop) {
+            } else if (userDiff < 0 && Math.abs(userDiff) === Math.abs(maxDrop)) {
                 trendHtml = `<span class="trend-icon trend-red" title="Fallit mest: -${Math.abs(userDiff)} platser">▼</span>`;
             }
         }
 
         row.innerHTML = `
-            <td>${i + 1}</td>
-            <td>
-                <div class="ranking-name-wrapper">
-                    <span>${player.name}</span>
-                    <div class="trend-container">${trendHtml}</div>
-                </div>
-            </td>
+            <td>${i + 1} ${trendHtml}</td>
+            <td><strong>${player.name}</strong></td>
             <td>${player.total}</td>
             <td style="text-align:center">${player.p12}</td>
             <td style="text-align:center">${player.p0}</td>
@@ -222,73 +252,95 @@ function renderRanking() {
 }
 
 function renderMatrix() {
+    const matrixView = document.getElementById("view-matrix");
+    if (!matrixView) return;
+
+    matrixView.innerHTML = `
+        <div class="card">
+            <div class="matrix-wrapper">
+                <table class="matrix-table">
+                    <thead>
+                        <tr id="matrix-header"></tr>
+                    </thead>
+                    <tbody id="matrix-body"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
     const header = document.getElementById("matrix-header");
     const tbody = document.getElementById("matrix-body");
-    const matches = allMatches.filter(m => m.stage === "GROUP_STAGE").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
+    
+    // NYTT: Här filtrerar vi matcherna så att de färdigspelade döljs helt om "hideFinishedMatches" är true
+    const matches = allMatches
+        .filter(m => m.stage === "GROUP_STAGE")
+        .filter(m => !hideFinishedMatches || m.status !== "FINISHED")
+        .sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    let headerHtml = "<th>Pos</th><th>Deltagare</th>";
+    let headerHtml = "<th>Pos</th><th style='cursor: pointer; user-select: none;' onclick='toggleMatrixSort()'>Deltagare ↕️</th>";
     matches.forEach(m => {
         const key = getMatchKey(m);
-        
-        const currentHomeTLA = nameToTlaMap[m.homeTeam?.name] || m.homeTeam?.tla || "???";
-        const currentAwayTLA = nameToTlaMap[m.awayTeam?.name] || m.awayTeam?.tla || "???";
-        const displayKey = `${currentHomeTLA}-${currentAwayTLA}`;
-
         const homeFullName = teamNamesSE[m.homeTeam.name] || m.homeTeam.name;
         const awayFullName = teamNamesSE[m.awayTeam.name] || m.awayTeam.name;
         const resHtml = m.status === "FINISHED" ? `<div class="matrix-th-res">${m.score.fullTime.home}-${m.score.fullTime.away}</div>` : `<div class="matrix-th-res">-</div>`;
         
         headerHtml += `
             <th class="matrix-tooltip-cell">
-                <div class="matrix-th-match">${displayKey}</div>
+                <div class="matrix-th-match">${key}</div>
                 ${resHtml}
                 <span class="matrix-tooltip-box">${homeFullName} - ${awayFullName}</span>
             </th>`;
     });
     header.innerHTML = headerHtml;
-    tbody.innerHTML = "";
 
-    const users = Object.keys(allPredictions).sort((a,b) => getUserStatsAtMatchLimit(b).totalPoints - getUserStatsAtMatchLimit(a).totalPoints);
+    const users = Object.keys(allPredictions);
 
-    users.forEach((user, i) => {
+    // 1. Räkna ut poäng för ALLA deltagare först
+    const rankingScores = users.map(user => {
+        return { name: user, totalPoints: getUserStatsAtMatchLimit(user).totalPoints };
+    });
+
+    // 2. Sortera ALLTID efter ranking först för att räkna ut den fasta placeringen (inklusive delad plats)
+    rankingScores.sort((a, b) => b.totalPoints - a.totalPoints || a.name.localeCompare(b.name));
+    
+    const orderedPoints = rankingScores.map(x => x.totalPoints);
+    
+    // Spara ranking-positionen som en egenskap på varje deltagare
+    rankingScores.forEach((player, i) => {
+        player.rankingPos = orderedPoints.indexOf(player.totalPoints) + 1;
+    });
+
+    // 3. Om användaren har valt bokstavsordning, sorterar vi om listan NU (men behåller .rankingPos intakt!)
+    if (!matrixSortByRanking) {
+        rankingScores.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // 4. Rita ut tabellen
+    rankingScores.forEach((player, i) => {
+        const user = player.name;
         const row = document.createElement("tr");
         if (user === currentUser) row.classList.add("highlight-user-row");
-        let html = `<td class="matrix-sticky-pos">${i+1}</td><td class="matrix-sticky-name">${user}</td>`;
         
+        const displayPos = player.rankingPos;
+
+        let html = `<td class="matrix-sticky-pos">${displayPos}</td><td class="matrix-sticky-name"><strong>${user}</strong></td>`;
+        
+        // Loopen använder nu den dynamiskt filtrerade "matches"-arrayen så kolumnmängden matchar exakt
         matches.forEach(m => {
             const key = getMatchKey(m);
             const pred = getPredictionFromKey(allPredictions[user], key);
             
             if (m.status === "FINISHED" || m.status === "IN_PLAY") {
-                const homeTLA = nameToTlaMap[m.homeTeam?.name] || m.homeTeam?.tla || "???";
-                const ordered = [homeTLA, (nameToTlaMap[m.awayTeam?.name] || m.awayTeam?.tla || "???")].sort();
-                
-                let [pH, pA] = pred.split("-").map(Number);
-                let displayPred = pred;
-                if (homeTLA !== ordered[0]) {
-                    [pH, pA] = [pA, pH];
-                    displayPred = `${pH}-${pA}`;
-                }
-
-                const pts = calculatePoints(m.score.fullTime.home, m.score.fullTime.away, pH, pA);
+                const pts = calculatePointsAdvanced(m, pred);
                 let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
                 
                 html += `<td class="${cls} matrix-tooltip-cell">
                             <div class="matrix-cell-pts">${pts}</div>
-                            <span class="matrix-tooltip-box">Tips: ${displayPred}</span>
+                            <span class="matrix-tooltip-box">${pred}</span>
                          </td>`;
             } else {
-                const homeTLA = nameToTlaMap[m.homeTeam?.name] || m.homeTeam?.tla || "???";
-                const ordered = [homeTLA, (nameToTlaMap[m.awayTeam?.name] || m.awayTeam?.tla || "???")].sort();
-                
-                let displayPred = pred;
-                if (pred !== "-" && homeTLA !== ordered[0]) {
-                    const [pH, pA] = pred.split("-").map(Number);
-                    displayPred = `${pA}-${pH}`;
-                }
-
                 html += `<td>
-                            <div class="matrix-cell-pts text-muted">(${displayPred})</div>
+                            <div class="matrix-cell-pts text-muted">(${pred})</div>
                          </td>`;
             }
         });
@@ -297,144 +349,59 @@ function renderMatrix() {
     });
 }
 
-function renderChart() {
-    const ctx = document.getElementById('trendChart');
-    if (!ctx) return;
-
-    const finishedMatches = allMatches
-        .filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED")
-        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-
-    if (finishedMatches.length === 0) return;
-
-    const users = Object.keys(allPredictions);
-    const labels = ["Start", ...finishedMatches.map(m => getMatchKey(m))];
-
-    const playerHistory = {};
-    users.forEach(user => {
-        playerHistory[user] = { points: 0, history: [0] };
-    });
-
-    finishedMatches.forEach((match) => {
-        const key = getMatchKey(match);
-        const matchScores = [];
-
-        users.forEach(user => {
-            const userPredictions = allPredictions[user] || {};
-            const prediction = getPredictionFromKey(userPredictions, key);
-            if (prediction && prediction !== "-") {
-                const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
-                const ordered = [homeTLA, (nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???")].sort();
-                
-                let [pH, pA] = prediction.split("-").map(Number);
-                if (homeTLA !== ordered[0]) {
-                    [pH, pA] = [pA, pH];
-                }
-                playerHistory[user].points += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
-            }
-            matchScores.push({ name: user, points: playerHistory[user].points });
-        });
-
-        matchScores.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
-
-        matchScores.forEach((item, rankIdx) => {
-            playerHistory[item.name].history.push(rankIdx + 1);
-        });
-    });
-
-    users.forEach(user => {
-        playerHistory[user].history[0] = playerHistory[user].history[1];
-    });
-
-    const datasets = users.map(user => {
-        const isUser = user === currentUser;
-        return {
-            label: user,
-            data: playerHistory[user].history,
-            borderColor: isUser ? '#ffc107' : stringToColor(user),
-            backgroundColor: isUser ? '#ffc107' : stringToColor(user),
-            borderWidth: isUser ? 5 : 1,
-            z: isUser ? 999 : 1,
-            tension: 0.3,
-            fill: false,
-            pointRadius: isUser ? 4 : 1
-        };
-    });
-
-    datasets.sort((a, b) => (a.label === currentUser ? 1 : -1));
-
-    if (trendChartInstance) trendChartInstance.destroy();
-    trendChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: datasets },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false,
-            resizeDelay: 100,
-            interaction: { mode: 'nearest', intersect: false, axis: 'x' },
-            plugins: { 
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.dataset.label}: Placering ${context.parsed.y}`;
-                        }
-                    }
-                }
-            },
-            scales: { 
-                y: { 
-                    reverse: true,
-                    min: 1, 
-                    max: users.length,
-                    ticks: { stepSize: 1, font: { size: 10 } },
-                    title: { display: true, text: 'Placering i tabellen' }
-                },
-                x: {
-                    title: { display: true, text: 'Matcher spelade' },
-                    ticks: { font: { size: 10 } }
-                }
-            }
-        }
-    });
-}
-
 function setupTabs() {
     const tabs = {
         "btn-matches": ["view-matches", false],
         "btn-ranking": ["view-ranking", false],
-        "btn-matrix": ["view-matrix", true],
-        "btn-chart": ["view-chart", true]
+        "btn-matrix": ["view-matrix", true]
     };
 
     Object.keys(tabs).forEach(btnId => {
-        document.getElementById(btnId).addEventListener("click", () => {
-            Object.values(tabs).forEach(v => document.getElementById(v[0]).classList.add("hidden"));
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        
+        btn.addEventListener("click", () => {
+            Object.values(tabs).forEach(v => {
+                const el = document.getElementById(v[0]);
+                if (el) el.classList.add("hidden");
+            });
             document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
             
             const [viewId, fullWidth] = tabs[btnId];
-            document.getElementById(viewId).classList.remove("hidden");
-            document.getElementById(btnId).classList.add("active");
+            const currentView = document.getElementById(viewId);
+            if (currentView) currentView.classList.remove("hidden");
+            btn.classList.add("active");
             
             const container = document.getElementById("main-container");
-            fullWidth ? container.classList.add("full-width") : container.classList.remove("full-width");
+            if (container) {
+                fullWidth ? container.classList.add("full-width") : container.classList.remove("full-width");
+            }
+
+            // --- HÄR ÄR ÄNDRINGEN FÖR ATT DÖLJA/VISA FILTER-KNAPPEN ---
+            // Vi letar efter checkboxen. Om din checkbox ligger i en container (t.ex. en label eller div), 
+            // kan du byta ut "hide-finished-checkbox" mot det ID:t istället.
+            const filterElement = document.getElementById("hide-finished-checkbox");
+            
+            // Om du har en tillhörande text/label till knappen som du vill dölja, 
+            // döljer vi oftast dess förälder (parent) för att få med allt:
+            const filterContainer = filterElement ? filterElement.parentElement : null;
+            
+            if (filterContainer) {
+                if (btnId === "btn-ranking") {
+                    filterContainer.style.display = "none";  // Dölj i tabellfliken
+                } else {
+                    filterContainer.style.display = "block"; // Visa i matcher och matris
+                }
+            }
+            // --------------------------------------------------------
 
             if (btnId === "btn-ranking") renderRanking();
             if (btnId === "btn-matrix") renderMatrix();
-            if (btnId === "btn-chart") renderChart();
         });
     });
 
     document.getElementById("btn-rules").addEventListener("click", () => document.getElementById("rules-modal").classList.remove("hidden"));
     document.querySelector(".close-btn").addEventListener("click", () => document.getElementById("rules-modal").classList.add("hidden"));
-}
-
-function stringToColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    let color = '#';
-    for (let i = 0; i < 3; i++) color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).slice(-2);
-    return color;
 }
 
 async function start() {
@@ -444,7 +411,26 @@ async function start() {
     allPredictions = await respP.json();
     
     const selector = document.getElementById("user-selector");
-    Object.keys(allPredictions).forEach(u => {
+
+    const userModal = document.getElementById("user-tips-modal");
+    const closeUserBtn = document.querySelector(".close-user-modal-btn");
+
+    if (closeUserBtn && userModal) {
+    // Stäng via krysset
+    closeUserBtn.addEventListener("click", () => userModal.classList.add("hidden"));
+    
+    // Stäng om man klickar utanför rutan
+    window.addEventListener("click", (e) => {
+        if (e.target === userModal) {
+            userModal.classList.add("hidden");
+        }
+    });
+}
+
+    // Vi sorterar nycklarna alfabetiskt med hänsyn till svenska tecken (Å, Ä, Ö) innan loopen körs
+    Object.keys(allPredictions)
+    .sort((a, b) => a.localeCompare(b, 'sv'))
+    .forEach(u => {
         const option = document.createElement("option");
         option.value = u;
         option.innerText = u;
@@ -460,18 +446,32 @@ async function start() {
         renderMatches();
         if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
         if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
-        if (!document.getElementById("view-chart").classList.contains("hidden")) renderChart();
     });
 
     document.getElementById("hide-finished-checkbox").addEventListener("change", (e) => {
         hideFinishedMatches = e.target.checked;
         renderMatches();
+
+        const matrixView = document.getElementById("view-matrix");
+    if (matrixView && !matrixView.classList.contains("hidden")) {
+        renderMatrix();
+    }
     });
 
     const respM = await fetch(API_URL);
     const data = await respM.json();
     allMatches = data.matches;
+    
+    // RENDERAR ALLT PÅ REKTIGT NÄR API-SVARET HAR LANDAT:
     renderMatches();
+    if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
+    if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
 }
+
+function toggleMatrixSort() {
+    matrixSortByRanking = !matrixSortByRanking;
+    renderMatrix();
+}
+
 
 start();

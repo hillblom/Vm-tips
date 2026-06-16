@@ -9,6 +9,7 @@
     --success-color: #28a745;
     --warning-color: #ffc107;
     --danger-color: #dc3545;
+    --tbl-btn-active-bg: #0b4e92;
 }
 
 * {
@@ -35,6 +36,11 @@ body {
     max-width: 100%;
 }
 
+.header-container {
+    text-align: center; /* Centrerar VM-tips 2026 */
+    margin-bottom: 10px;
+}
+
 header {
     display: flex;
     justify-content: space-between;
@@ -47,6 +53,22 @@ header {
 h1 {
     font-size: 1.8rem;
     color: #333;
+}
+
+/* Placerar deltagarväljaren och kryssrutan på samma rad */
+.user-selector-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.selector-group, .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .controls {
@@ -80,8 +102,20 @@ select {
     user-select: none;
 }
 
+/* Centrerar flikarna */
+.main-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1px;
+}
+
+/* Behåller den gamla klassen .tabs om den används någonstans */
 .tabs {
     display: flex;
+    justify-content: center;
     gap: 5px;
     margin-bottom: 15px;
     border-bottom: 1px solid var(--border-color);
@@ -107,8 +141,8 @@ select {
 }
 
 .tab-btn.active {
-    color: var(--primary-color);
-    background-color: var(--card-bg);
+    color: var(--bg-color);
+    background-color: var(--tbl-btn-active-bg);
     border-color: var(--border-color);
     border-bottom: 1px solid var(--card-bg);
 }
@@ -157,9 +191,19 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     vertical-align: middle;
 }
 
-.highlight-user-row {
-    background-color: #fff3cd;
-    font-weight: bold;
+
+
+.highlight-user-row td {
+    border-top: 2px solid #212529 !important;    /* Övre ramen (mörkgrå/svart) */
+    border-bottom: 2px solid #212529 !important; /* Undre ramen */
+}
+
+.highlight-user-row td:first-child {
+    border-left: 2px solid #212529 !important;   /* Vänsterkanten på raden */
+}
+
+.highlight-user-row td:last-child {
+    border-right: 2px solid #212529 !important;  /* Högerkanten på raden */
 }
 
 .ranking-name-wrapper {
@@ -183,7 +227,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 .trend-red { color: var(--danger-color); }
 .trend-dash { color: var(--text-muted); font-size: 0.8rem; }
 
-/* --- MATRISFLIKEN (STRICT COMPACT) --- */
+/* --- MATRISFLIKEN (ÅTERSTÄLLD TILL DITT ORIGINAL) --- */
 .matrix-wrapper {
     width: 100%;
     overflow-x: auto;
@@ -198,7 +242,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 
 .matrix-table th, .matrix-table td { 
     border: 1px solid #ddd; 
-    padding: 4px 6px; 
+    padding: 0px 2px; 
     text-align: center; 
     white-space: nowrap; 
     font-weight: normal; 
@@ -217,7 +261,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     left: 0;
     background-color: #fff;
     z-index: 5;
-    font-weight: bold;
+    font-weight: normal;
     min-width: 35px;
     box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
@@ -228,7 +272,8 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     background-color: #fff;
     z-index: 5;
     text-align: left !important;
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: normal;
     min-width: 100px;
     box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
@@ -244,6 +289,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 
 .matrix-th-match {
     font-size: 0.85rem;
+    font-weight: normal !important;
     color: #333;
 }
 
@@ -255,9 +301,15 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .matrix-cell-pts { 
-    font-size: 0.95rem; 
-    font-weight: normal; 
-    padding: 2px 0; 
+    font-size: 0.75rem; 
+    font-weight: bold; 
+    padding: 1px 0; 
+}
+
+.matrix-cell-pts.text-muted {
+    font-size: 0.75rem;
+    font-weight: normal;
+    font-style: italic;
 }
 
 /* Tooltip container */
@@ -269,7 +321,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 /* Tooltip box */
 .matrix-tooltip-cell .matrix-tooltip-box {
     visibility: hidden;
-    width: 120px;
+    width: 30px;
     background-color: #333;
     color: #fff;
     text-align: center;
@@ -304,13 +356,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 .matrix-tooltip-cell:hover .matrix-tooltip-box {
     visibility: visible;
     opacity: 1;
-}
-
-/* --- GRAF --- */
-.chart-container {
-    position: relative;
-    height: 600px;
-    width: 100%;
 }
 
 /* --- MODAL --- */
@@ -376,4 +421,112 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 
 .rules-btn:hover {
     background-color: #5a6268;
+}
+
+/* Layout för rankingfliken */
+.ranking-layout-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* Tabellen tar upp 65-70% av bredden */
+.ranking-main-table {
+    flex: 2;
+    margin-bottom: 0;
+}
+
+/* Infopanelen tar upp resterande del */
+.ranking-side-panel {
+    flex: 1;
+    min-width: 280px;
+    padding: 20px;
+    background-color: var(--card-bg);
+}
+
+/* Matchinfo i toppen */
+.match-info-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    text-align: center;
+}
+
+.info-box {
+    flex: 1;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.info-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+/* Avdelare */
+.panel-divider {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 15px 0;
+}
+
+.ranking-side-panel h3 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+/* Listan för Topp 5 */
+.top-five-list {
+    padding-left: 20px;
+    font-weight: 500;
+}
+.top-five-list li {
+    margin-bottom: 4px;
+}
+
+/* Trendkorten för Raket/Fritt fall */
+.trends-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.trend-card {
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.trend-card h4 {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: #333;
+}
+
+.trend-card p {
+    font-size: 1.05rem;
+    font-weight: bold;
+}
+
+.trend-card.climb { background-color: #d4edda; color: #155724; }
+.trend-card.drop { background-color: #f8d7da; color: #721c24; }
+
+/* Responsivitet för mobiler */
+@media (max-width: 768px) {
+    .ranking-layout-container {
+        flex-direction: column;
+    }
+    .ranking-main-table, .ranking-side-panel {
+        width: 100%;
+    }
 }

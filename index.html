@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VM-Tips 2026</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div id="main-container" class="container">
@@ -20,7 +19,6 @@
             <button id="btn-matches" class="tab-btn active">Matcher</button>
             <button id="btn-ranking" class="tab-btn">Tabell</button>
             <button id="btn-matrix" class="tab-btn">Matris</button>
-            <button id="btn-chart" class="tab-btn">Graf</button>
             <button id="btn-rules" class="tab-btn info-btn">i</button>
         </div>
 
@@ -54,11 +52,14 @@
             </table>
         </div>
 
-        <div id="view-ranking" class="tab-content hidden">
+<div id="view-ranking" class="tab-content hidden">
+    <div class="ranking-layout-container">
+        
+        <div class="ranking-main-table">
             <table class="ranking-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px;">Pos</th>
+                        <th style="width: 55px;">Pos</th>
                         <th>Namn</th>
                         <th>Totalt</th>
                         <th style="width: 100px; text-align: center;">Antal 12p</th>
@@ -68,6 +69,35 @@
                 <tbody id="ranking-list"></tbody>
             </table>
         </div>
+
+        <div class="ranking-side-panel">
+            <div class="side-panel-section match-info-grid">
+                <div class="info-box">
+                    <span class="info-label">Omgång</span>
+                    <span class="info-value" id="stats-played-rounds">-</span>
+                </div>
+                <div class="info-box">
+                    <span class="info-label">Matcher kvar</span>
+                    <span class="info-value" id="stats-matches-left">-</span>
+                </div>
+            </div>
+            
+            <hr class="panel-divider">
+
+            <div class="side-panel-section trends-section">
+                <div class="trend-card climb">
+                    <h4>Raketen sedan förra matchen:</h4>
+                    <p id="stats-max-climb">Ingen data än</p>
+                </div>
+                <div class="trend-card drop">
+                    <h4>Fritt fall sedan förra matchen:</h4>
+                    <p id="stats-max-drop">Ingen data än</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
 
         <div id="view-matrix" class="tab-content hidden">
             <div class="matrix-wrapper">
@@ -80,17 +110,13 @@
             </div>
         </div>
 
-        <div id="view-chart" class="tab-content hidden">
-            <div class="chart-wrapper">
-                <canvas id="trendChart"></canvas>
-            </div>
-        </div>
+        
     </div>
 
     <div id="rules-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <h2>Regler & Poängfördelning</h2>
+            <h2>Poängfördelning</h2>
             <div class="rules-text">
                 <p><strong>Rätt resultat:</strong> 12 poäng</p>
                 <p><strong>Rätt vinnare/fel resultat:</strong> 10 poäng minus fel antal mål.</p>
