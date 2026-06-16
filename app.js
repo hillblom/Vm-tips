@@ -9,40 +9,21 @@ let trendChartInstance = null;
 
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
-    "Belgium": "Belgien", "Bosnia and Herzegovina": "Bosnien", "Bosnia-Herzegovina": "Bosnien", "Brazil": "Brasilien",
-    "Canada": "Kanada", "Cape Verde": "Kap Verde", "Cape-Verde": "Kap Verde", "Colombia": "Colombia",
-    "Croatia": "Kroatien", "Curaçao": "Curacao", "Curacao": "Curacao", "Czech Republic": "Tjeckien",
-    "Czechia": "Tjeckien", "DR Kongo": "DR Kongo", "DR Congo": "DR Kongo", "Ecuador": "Ecuador", "Egypt": "Egypten",
-    "El Salvador": "El Salvador", "England": "England", "France": "Frankrike", "Germany": "Tyskland",
-    "Ghana": "Ghana", "Haiti": "Haiti", "Hait": "Haiti", "Iran": "Iran", "Iraq": "Irak", "Ivory Coast": "Elfenbenskusten",
-    "Japan": "Japan", "Jordan": "Jordanien", "Mexico": "Mexiko", "Morocco": "Marocko",
-    "Netherlands": "Nederländerna", "New Zealand": "Nya Zeeland", "Norway": "Norge", "Panama": "Panama",
-    "Paraguay": "Paraguay", "Portugal": "Portugal", "Qatar": "Qatar", "Saudi Arabia": "Saudiarabien", "Saudi-Arabia": "Saudiarabien",
-    "Scotland": "Skottland", "Senegal": "Senegal", "South Africa": "Sydafrika", "South Korea": "Sydkorea",
-    "Spain": "Spanien", "Sweden": "Sverige", "Switzerland": "Schweiz", "Tunisia": "Tunisien",
-    "Turkey": "Turkiet", "United States": "USA", "Uruguay": "Uruguay", "Uzbekistan": "Uzbekistan"
+    "Belgium": "Belgien", "Brazil": "Brasilien", "Canada": "Kanada", "Croatia": "Kroatien",
+    "Czechia": "Tjeckien", "Denmark": "Danmark", "England": "England", "France": "Frankrike",
+    "Germany": "Tyskland", "Italy": "Italien", "Mexico": "Mexiko", "Morocco": "Marocko",
+    "Netherlands": "Nederländerna", "Norway": "Norge", "Portugal": "Portugal", "Spain": "Spanien",
+    "Sweden": "Sverige", "Switzerland": "Schweiz", "United States": "USA", "Uruguay": "Uruguay"
 };
 
 const nameToTlaMap = {
-    "Algeria": "ALG", "Argentina": "ARG", "Australia": "AUS", "Austria": "AUT",
-    "Belgium": "BEL", "Bosnia and Herzegovina": "BIH", "Bosnia-Herzegovina": "BIH", "Brazil": "BRA",
-    "Canada": "CAN", "Cape Verde": "CPV", "Cape-Verde": "CPV", "Colombia": "COL",
-    "Croatia": "CRO", "Curaçao": "CUW", "Curacao": "CUW", "Czech Republic": "CZE", "Czechia": "CZE",
-    "DR Congo": "COD", "DR Kongo": "COD", "Ecuador": "ECU", "Egypt": "EGY", "El Salvador": "SLV",
-    "England": "ENG", "France": "FRA", "Germany": "GER", "Ghana": "GHA", 
-    "Haiti": "HAI", "Hait": "HAI",
-    "Iran": "IRN", "Iraq": "IRQ", "Ivory Coast": "CIV", "Japan": "JPN", "Jordan": "JOR",
-    "Mexico": "MEX", "Morocco": "MAR", "Netherlands": "NED", "New Zealand": "NZL",
-    "Norway": "NOR", "Panama": "PAN", "Paraguay": "PAR", "Portugal": "POR", "Qatar": "QAT",
-    "Saudi Arabia": "KSA", "Saudi-Arabia": "KSA", "Scotland": "SCO", "Senegal": "SEN", "South Africa": "RSA",
-    "South Korea": "KOR", "Spain": "ESP", "Sweden": "SWE", "Switzerland": "SUI",
-    "Tunisia": "TUN", "Turkey": "TUR", "United States": "USA", "Uruguay": "URY", "Uzbekistan": "UZB"
+    "Argentina": "ARG", "Brazil": "BRA", "France": "FRA", "Germany": "GER", "Spain": "ESP", "Sweden": "SWE"
 };
 
 function getBroadcasterHtml(match) {
     if (match.broadcaster === "svt") return `<img src="svt.png" class="tv-logo" alt="SVT">`;
     if (match.broadcaster === "tv4") return `<img src="tv4.png" class="tv-logo" alt="TV4">`;
-    return `<span style="font-size:0.7rem; color:var(--text-muted)">Ej klart</span>`;
+    return `<span style="font-size:0.7rem; color:var(--text-muted)">-</span>`;
 }
 
 function getMatchKey(match) {
@@ -84,6 +65,27 @@ function getUserStatsAtMatchLimit(user, limit = null) {
     return { totalPoints, p12, p0 };
 }
 
+// Räknar ut trend-ikoner (senaste 3 matcherna)
+function getTrendIconsHtml(user, finishedMatches) {
+    const userPredictions = allPredictions[user] || {};
+    // Ta de tre senaste färdigspelade matcherna
+    const lastThree = finishedMatches.slice(-3);
+    if (lastThree.length === 0) return `<span class="trend-dash">—</span>`;
+
+    return lastThree.map(match => {
+        const key = getMatchKey(match);
+        const pred = getPredictionFromKey(userPredictions, key);
+        if (pred === "-") return `<span class="trend-icon trend-dash">—</span>`;
+        
+        const [pH, pA] = pred.split("-").map(Number);
+        const pts = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
+        
+        if (pts === 12) return `<span class="trend-icon trend-green">●</span>`;
+        if (pts > 0) return `<span class="trend-icon trend-yellow">●</span>`;
+        return `<span class="trend-icon trend-red">●</span>`;
+    }).join("");
+}
+
 function renderMatches() {
     const tbody = document.getElementById("matches");
     if (!tbody) return;
@@ -113,7 +115,7 @@ function renderMatches() {
 
         const date = new Date(match.utcDate);
         row.innerHTML = `
-            <td>${date.toLocaleDateString('sv-SE')} ${date.toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'})} ${getBroadcasterHtml(match)}</td>
+            <td>${date.toLocaleDateString('sv-SE')} ${getBroadcasterHtml(match)}</td>
             <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
             <td>${homeScore} - ${awayScore}</td>
             <td>${prediction}</td>
@@ -129,6 +131,8 @@ function renderRanking() {
     if (!tbody) return;
     tbody.innerHTML = "";
 
+    const finishedMatches = allMatches.filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
+
     let ranking = Object.keys(allPredictions).map(user => {
         const stats = getUserStatsAtMatchLimit(user);
         return { name: user, total: stats.totalPoints, p12: stats.p12, p0: stats.p0 };
@@ -139,9 +143,17 @@ function renderRanking() {
     ranking.forEach((player, i) => {
         const row = document.createElement("tr");
         if (player.name === currentUser) row.classList.add("highlight-user-row");
+        
+        const trendHtml = getTrendIconsHtml(player.name, finishedMatches);
+
         row.innerHTML = `
             <td>${i + 1}</td>
-            <td>${player.name}</td>
+            <td>
+                <div class="ranking-name-wrapper">
+                    <span>${player.name}</span>
+                    <div class="trend-container">${trendHtml}</div>
+                </div>
+            </td>
             <td>${player.total}</td>
             <td style="text-align:center">${player.p12}</td>
             <td style="text-align:center">${player.p0}</td>
@@ -155,7 +167,18 @@ function renderMatrix() {
     const tbody = document.getElementById("matrix-body");
     const matches = allMatches.filter(m => m.stage === "GROUP_STAGE").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    header.innerHTML = "<th>Pos</th><th>Deltagare</th>" + matches.map(m => `<th>${getMatchKey(m)}</th>`).join("");
+    // Skapa headers med Match-kod överst och faktiskt resultat under (om färdigt)
+    let headerHtml = "<th>Pos</th><th>Deltagare</th>";
+    matches.forEach(m => {
+        const key = getMatchKey(m);
+        if (m.status === "FINISHED") {
+            const res = `${m.score.fullTime.home}-${m.score.fullTime.away}`;
+            headerHtml += `<th><div class="matrix-th-match">${key}</div><div class="matrix-th-res">${res}</div></th>`;
+        } else {
+            headerHtml += `<th><div class="matrix-th-match">${key}</div><div class="matrix-th-res">-</div></th>`;
+        }
+    });
+    header.innerHTML = headerHtml;
     tbody.innerHTML = "";
 
     const users = Object.keys(allPredictions).sort((a,b) => getUserStatsAtMatchLimit(b).totalPoints - getUserStatsAtMatchLimit(a).totalPoints);
@@ -171,9 +194,14 @@ function renderMatrix() {
                 const [pH, pA] = pred.split("-").map(Number);
                 const pts = calculatePoints(m.score.fullTime.home, m.score.fullTime.away, pH, pA);
                 let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
-                html += `<td class="${cls} matrix-tooltip-cell">${pts}<span class="matrix-tooltip-box">${pred.replace("-", " - ")}</span></td>`;
+                
+                // Visar poäng stort, och gissat tips i rutan
+                html += `<td class="${cls} matrix-tooltip-cell">
+                            <div class="matrix-cell-pts">${pts}</div>
+                            <div class="matrix-cell-pred">${pred}</div>
+                         </td>`;
             } else {
-                html += `<td>(${pred})</td>`;
+                html += `<td><div class="matrix-cell-pred">${pred}</div></td>`;
             }
         });
         row.innerHTML = html;
@@ -181,20 +209,10 @@ function renderMatrix() {
     });
 }
 
-function stringToColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    let color = '#';
-    for (let i = 0; i < 3; i++) color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).slice(-2);
-    return color;
-}
-
-// GENERERA OCH RENDERA TRENDGRAFEN (UPPDATERAD LOGIK FÖR PLACERING)
 function renderChart() {
     const ctx = document.getElementById('trendChart');
     if (!ctx) return;
 
-    // Hämta färdigspelade gruppspelsmatcher kronologiskt
     const finishedMatches = allMatches
         .filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED")
         .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
@@ -202,21 +220,14 @@ function renderChart() {
     if (finishedMatches.length === 0) return;
 
     const users = Object.keys(allPredictions);
-    
-    // Labels för X-axeln (Match-keys)
     const labels = ["Start", ...finishedMatches.map(m => getMatchKey(m))];
 
-    // Strukturerad datalagring för att bygga linjerna
     const playerHistory = {};
     users.forEach(user => {
-        playerHistory[user] = {
-            points: 0,
-            history: [0] // Startposition (justeras nedan)
-        };
+        playerHistory[user] = { points: 0, history: [0] };
     });
 
-    // Loopa match för match och räkna ut ackumulerad poängställning sekventiellt
-    finishedMatches.forEach((match, matchIndex) => {
+    finishedMatches.forEach((match) => {
         const key = getMatchKey(match);
         const matchScores = [];
 
@@ -225,43 +236,37 @@ function renderChart() {
             const prediction = getPredictionFromKey(userPredictions, key);
             if (prediction && prediction !== "-") {
                 const [pH, pA] = prediction.split("-").map(Number);
-                const pts = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
-                playerHistory[user].points += pts;
+                playerHistory[user].points += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
             }
             matchScores.push({ name: user, points: playerHistory[user].points });
         });
 
-        // Sortera poängställningen efter denna match (med alfabetisk tie-breaker)
         matchScores.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 
-        // Ge varje spelare dess placering (1 till X) efter denna match
         matchScores.forEach((item, rankIdx) => {
             playerHistory[item.name].history.push(rankIdx + 1);
         });
     });
 
-    // Fyll i startpositionen på ett snyggare sätt (samma som efter första matchen)
     users.forEach(user => {
         playerHistory[user].history[0] = playerHistory[user].history[1];
     });
 
-    // Bygg ihop datasets för Chart.js
     const datasets = users.map(user => {
         const isUser = user === currentUser;
         return {
             label: user,
             data: playerHistory[user].history,
-            borderColor: isUser ? '#ffc107' : stringToColor(user), // Highlighta guld/gul
+            borderColor: isUser ? '#ffc107' : stringToColor(user),
             backgroundColor: isUser ? '#ffc107' : stringToColor(user),
-            borderWidth: isUser ? 5 : 1, // Tjockare linje för vald användare
-            z: isUser ? 999 : 1,         // Lägg den valda linjen överst
+            borderWidth: isUser ? 5 : 1,
+            z: isUser ? 999 : 1,
             tension: 0.3,
             fill: false,
             pointRadius: isUser ? 4 : 1
         };
     });
 
-    // Sortera datasets så den markerade användaren ritas sist (hamnar överst)
     datasets.sort((a, b) => (a.label === currentUser ? 1 : -1));
 
     if (trendChartInstance) trendChartInstance.destroy();
@@ -270,15 +275,11 @@ function renderChart() {
         data: { labels: labels, datasets: datasets },
         options: { 
             responsive: true, 
-            maintainAspectRatio: false, // Krävs för dynamisk höjd
+            maintainAspectRatio: false,
             resizeDelay: 100,
-            interaction: {
-                mode: 'nearest',
-                intersect: false,
-                axis: 'x'
-            },
+            interaction: { mode: 'nearest', intersect: false, axis: 'x' },
             plugins: { 
-                legend: { display: false }, // Dölj legend högst upp, för rörigt med 33 namn
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
@@ -289,26 +290,15 @@ function renderChart() {
             },
             scales: { 
                 y: { 
-                    reverse: true, // VÄND AXELN! Placering 1 ska vara högst upp, inte längst ner
+                    reverse: true,
                     min: 1, 
                     max: users.length,
-                    ticks: {
-                        stepSize: 1,
-                        font: { size: 10 }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Placering i tabellen'
-                    }
+                    ticks: { stepSize: 1, font: { size: 10 } },
+                    title: { display: true, text: 'Placering i tabellen' }
                 },
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Matcher spelade'
-                    },
-                    ticks: {
-                        font: { size: 10 }
-                    }
+                    title: { display: true, text: 'Matcher spelade' },
+                    ticks: { font: { size: 10 } }
                 }
             }
         }
@@ -345,14 +335,20 @@ function setupTabs() {
     document.querySelector(".close-btn").addEventListener("click", () => document.getElementById("rules-modal").classList.add("hidden"));
 }
 
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    let color = '#';
+    for (let i = 0; i < 3; i++) color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).slice(-2);
+    return color;
+}
+
 async function start() {
     setupTabs();
     
-    // Ladda predictions först
     const respP = await fetch("predictions.json?v=" + Date.now());
     allPredictions = await respP.json();
     
-    // Bygg deltagar-rullist
     const selector = document.getElementById("user-selector");
     Object.keys(allPredictions).forEach(u => {
         const option = document.createElement("option");
@@ -361,28 +357,23 @@ async function start() {
         selector.appendChild(option);
     });
     
-    // Hämta sparad användare
     currentUser = localStorage.getItem("selectedUser") || Object.keys(allPredictions)[0];
     selector.value = currentUser;
 
-    // Lyssna på ändringar av användare
     selector.addEventListener("change", (e) => {
         currentUser = e.target.value;
         localStorage.setItem("selectedUser", currentUser);
         renderMatches();
-        // Uppdatera även andra vyer om de är öppna
         if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
         if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
         if (!document.getElementById("view-chart").classList.contains("hidden")) renderChart();
     });
 
-    // Lyssna på filter-checkbox
     document.getElementById("hide-finished-checkbox").addEventListener("change", (e) => {
         hideFinishedMatches = e.target.checked;
         renderMatches();
     });
 
-    // Ladda matcher och rendera
     const respM = await fetch(API_URL);
     const data = await respM.json();
     allMatches = data.matches;
