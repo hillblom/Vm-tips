@@ -141,16 +141,24 @@ function renderMatches() {
         }
 
         const date = new Date(match.utcDate);
-        const dateString = date.toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+// Vi separerar datum och tid i JS för full kontroll
+const onlyDate = date.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }); // Ex: "16 juni" eller "2026-06-16"
+const onlyTime = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
-        row.innerHTML = `
-            <td>${dateString} ${getBroadcasterHtml(match)}</td>
-            <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
-            <td>${homeScore} - ${awayScore}</td>
-            <td>${prediction}</td>
-            <td>${points}</td>
-            <td>${match.status === "FINISHED" ? "Fulltid" : "Kommande"}</td>
-        `;
+row.innerHTML = `
+    <td class="match-meta-cell">
+        <div class="date-time-stack">
+            <span class="match-d">${onlyDate}</span>
+            <span class="match-t">${onlyTime}</span>
+        </div>
+        ${getBroadcasterHtml(match)}
+    </td>
+    <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
+    <td>${homeScore} - ${awayScore}</td>
+    <td>${prediction}</td>
+    <td>${points}</td>
+    <td>${match.status === "FINISHED" ? "Fulltid" : "Kommande"}</td>
+`;
         tbody.appendChild(row);
     });
 }
@@ -458,7 +466,7 @@ async function start() {
     }
     });
 
-    const respM = await fetch(API_URL);
+    const respM = await fetch(API_URL + "?t=" + Date.now());
     const data = await respM.json();
     allMatches = data.matches;
     

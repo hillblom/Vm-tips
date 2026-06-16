@@ -550,48 +550,66 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     }
 }
 
-/* Kompakt layout för matchlistan på mobiler (iPhone etc.) */
+/* --- FIX FÖR DESKTOP: LÄGG TILL DETTA UTANFÖR DIN @MEDIA-REGEL --- */
+
+/* Gör så att datum/tid och logga ligger på samma rad på datorn */
+#view-matches td.match-meta-cell {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start; /* Håller dem samlade till vänster på datorn */
+    gap: 8px; /* Avstånd mellan datum/tid och loggan */
+    border-bottom: none; /* Snyggar till flex-ramen */
+}
+
+/* Gör så att datum och tid ligger på en och samma rad på datorn */
+#view-matches .date-time-stack {
+    display: flex;
+    flex-direction: row;
+    gap: 5px; /* Ett litet mellanrum mellan datumet och klockslaget */
+}
+
 @media (max-width: 480px) {
-    /* Minska radhöjden drastiskt i tabeller inuti matchvyn */
-    #view-matches td, 
-    #view-matches th {
-        padding: 4px 6px !important; /* Minimal padding för tunna rader */
-        font-size: 0.8rem !important;
-        vertical-align: middle;
+    /* Tvinga tunna rader i matchtabellen */
+    #view-matches td {
+        padding: 6px 8px !important;
+        vertical-align: middle !important;
     }
 
-    /* FIX FÖR DATUM, TID OCH LOGO I SAMMA CELL */
-    #view-matches td:first-child {
+    /* Gör den första cellen till en Flexbox-rad */
+    #view-matches td.match-meta-cell {
         display: flex !important;
+        flex-direction: row !important;
         align-items: center !important;
-        justify-content: space-between !important; /* Datum/tid till vänster, logga till höger */
-        gap: 6px !important;
-        min-width: 95px !important; /* Ger tillräckligt med bredd för uppdelningen */
-        border-bottom: none !important; /* Förhindrar dubbla linjer pga flex */
+        justify-content: space-between !important; /* Text till vänster, logga till höger */
+        gap: 4px !important;
+        min-width: 80px !important;
+        border-bottom: none !important; /* Hindrar fula linjebrytningar */
     }
 
-    /* Skapar en egen behållare för texten (om den inte redan finns, skapas den via flex) */
-    #view-matches td:first-child::before {
-        content: ""; /* Detta tvingar texten att hålla ihop om det behövs */
+    /* Skapar stapeln för datum (rad 1) och tid (rad 2) */
+    #view-matches .date-time-stack {
+        display: flex !important;
+        flex-direction: column !important;
+        line-height: 1 !important;
+        text-align: left !important;
     }
 
-    /* TV-logotypen skjuts till högerkanten och hålls kompakt */
-    #view-matches .tv-logo,
-    #view-matches td:first-child img {
+    #view-matches .match-d {
+        font-size: 0.75rem !important;
+        font-weight: 500;
+    }
+
+    #view-matches .match-t {
+        font-size: 0.75rem !important;
+        color: var(--text-muted);
+    }
+
+    /* TV-logotypen trycks ut till höger och behåller sin storlek */
+    #view-matches .tv-logo {
         height: 11px !important;
         width: auto !important;
+        flex-shrink: 0 !important;
         margin: 0 !important;
-        flex-shrink: 0 !important; /* Hindrar loggan från att tryckas ihop */
-    }
-
-    /* Om din JavaScript genererar datum och tid separerat med t.ex. ett <br> eller i en container, 
-       ser detta till att de hamnar på max 2 rader i sin stapel */
-    #view-matches td:first-child {
-        line-height: 1.1 !important;
-    }
-
-    /* Krymp texten en aning på lagnamnen vid behov */
-    #view-matches strong {
-        font-size: 0.85rem !important;
     }
 }
