@@ -10,7 +10,9 @@
 <body>
     <div id="main-container" class="container">
         
-        <h1>VM-Tips 2026</h1>
+        <div class="header-container">
+            <h1>⚽ VM-Tips 2026 ⚽</h1>
+        </div>
 
         <div id="lastUpdated" style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;"></div>
 
@@ -18,7 +20,8 @@
             <button id="btn-matches" class="tab-btn active">Matcher</button>
             <button id="btn-ranking" class="tab-btn">Tabell</button>
             <button id="btn-matrix" class="tab-btn">Matris</button>
-            <button id="btn-chart" class="tab-btn">Graf</button> <button id="btn-rules" class="tab-btn info-btn">i</button>
+            <button id="btn-chart" class="tab-btn">Graf</button>
+            <button id="btn-rules" class="tab-btn info-btn">i</button>
         </div>
 
         <div class="user-selector-container">
@@ -26,6 +29,7 @@
                 <label for="user-selector" class="selector-label">Deltagare:</label>
                 <select id="user-selector" class="user-dropdown"></select>
             </div>
+            
             <div id="match-filter-wrapper" class="filter-group">
                 <input type="checkbox" id="hide-finished-checkbox">
                 <label for="hide-finished-checkbox" class="filter-label">Dölj spelade matcher</label>
@@ -77,7 +81,7 @@
         </div>
 
         <div id="view-chart" class="tab-content hidden">
-            <div style="position: relative; width: 100%; height: 500px; margin-top: 15px;">
+            <div class="chart-wrapper">
                 <canvas id="trendChart"></canvas>
             </div>
         </div>
@@ -91,7 +95,7 @@
                 <p><strong>Rätt resultat:</strong> 12 poäng</p>
                 <p><strong>Rätt vinnare/fel resultat:</strong> 10 poäng minus fel antal mål.</p>
                 <p><strong>Fel vinnare:</strong> 5 poäng minus fel antal mål.</p>
-                <p><strong>Du tippar oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål.</p>
+                <p><strong>Oavgjort men fel resultat:</strong> 10 poäng minus fel antal mål.</p>
                 <p style="margin-top: 15px; font-weight: bold; color: #dc3545;">Man får inte minuspoäng.</p>
             </div>
         </div>
