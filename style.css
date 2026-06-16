@@ -2,322 +2,58 @@
     --primary-color: #007bff;
     --primary-dark: #0056b3;
     --text-muted: #6c757d;
-    --highlight-bg: #e3f2fd; /* Ljusblå diskret highlight-färg */
+    --highlight-bg: #fff9c4;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f6f9;
-    margin: 0;
-    padding: 20px;
-    color: #333;
-}
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
 
 .container {
-    max-width: 800px;
+    max-width: 850px;
     margin: 0 auto;
     background: #fff;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: max-width 0.2s ease-in-out;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transition: max-width 0.3s;
 }
+.container.full-width { max-width: 98%; }
 
-.container.full-width {
-    max-width: 100%;
-}
+.header-container { text-align: center; margin-bottom: 25px; }
+h1 { margin: 0; font-size: 2.4rem; color: #1a1a1a; }
 
-h1 {
-    text-align: center;
-    margin: 0 0 25px 0;
-    font-size: 2.2rem;
-    line-height: 1.2;
-}
+.main-tabs { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+.tab-btn { width: 100px; padding: 10px 0; font-weight: bold; border: 1px solid var(--primary-color); background: #fff; color: var(--primary-color); border-radius: 8px; cursor: pointer; transition: 0.2s; }
+.tab-btn.active, .tab-btn:hover { background: var(--primary-color); color: #fff; }
+.tab-btn.info-btn { width: 45px; font-family: serif; font-style: italic; }
 
-/* Fliksystemet - Centrerat och statiskt */
-.main-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: center;
-    align-items: center;
-}
+.user-selector-container { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+.user-dropdown { padding: 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 150px; }
 
-.tab-btn {
-    width: 110px;
-    padding: 10px 0;
-    font-size: 1rem;
-    font-weight: bold;
-    border: 1px solid var(--primary-color);
-    background-color: #fff;
-    color: var(--primary-color);
-    border-radius: 6px;
-    cursor: pointer;
-    text-align: center;
-    transition: background-color 0.15s, color 0.15s;
-}
+.ranking-table { width: 100%; border-collapse: collapse; }
+.ranking-table th, .ranking-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+.ranking-table th { background: #fafafa; }
 
-.tab-btn.info-btn {
-    width: 42px; 
-    font-style: italic;
-    font-family: "Georgia", serif;
-}
+tr.green { background: #e8f5e9; }
+tr.yellow { background: #fffde7; }
+tr.red { background: #ffebee; }
+tr.highlight-user-row { background: var(--highlight-bg) !important; font-weight: bold; }
 
-.tab-btn.active, .tab-btn:hover {
-    background-color: var(--primary-color);
-    color: #fff;
-}
+.matrix-wrapper { overflow-x: auto; max-height: 600px; }
+.matrix-table { border-collapse: collapse; font-size: 0.85rem; }
+.matrix-table th, .matrix-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
 
-/* Kompakt Namnväljare & Filterrad */
-.user-selector-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    background: #f8f9fa;
-    padding: 10px 15px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    border: 1px solid #e9ecef;
-}
+.matrix-sticky-pos { position: sticky; left: 0; background: #eee !important; z-index: 2; width: 30px; }
+.matrix-sticky-name { position: sticky; left: 30px; background: #f9f9f9 !important; z-index: 2; text-align: left !important; min-width: 100px; }
 
-.selector-group, .filter-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+.chart-wrapper { height: 500px; margin-top: 20px; }
 
-.selector-label {
-    font-weight: bold;
-    font-size: 0.85rem;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-}
+.hidden { display: none !important; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+.modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; }
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; }
 
-.user-dropdown {
-    padding: 6px 12px;
-    font-size: 0.95rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff;
-    color: #333;
-    outline: none;
-    cursor: pointer;
-    min-width: 160px;
-}
+.matrix-tooltip-cell { position: relative; }
+.matrix-tooltip-box { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; z-index: 10; font-size: 0.75rem; }
+.matrix-tooltip-cell:hover .matrix-tooltip-box { display: block; }
 
-/* "Dölj spelade matcher" styling */
-.filter-label {
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: #495057;
-    cursor: pointer;
-    user-select: none;
-}
-
-#hide-finished-checkbox {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-}
-
-/* Diskret highlight för vald användare i tabeller */
-tr.highlight-user-row {
-    background-color: var(--highlight-bg) !important;
-    font-weight: bold;
-}
-tr.highlight-user-row .matrix-sticky-name,
-tr.highlight-user-row .matrix-sticky-pos {
-    background-color: #d0e8ff !important;
-}
-
-/* Tabellstyling */
-.ranking-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-.ranking-table th, .ranking-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.ranking-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-}
-
-/* Matristabell */
-.matrix-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.78rem;
-}
-
-.matrix-table th, .matrix-table td {
-    padding: 6px 4px;
-    text-align: center;
-    border: 1px solid #dee2e6;
-    white-space: nowrap;
-}
-
-.matrix-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-}
-
-/* Låsta kolumner i matris */
-.matrix-sticky-pos {
-    text-align: center !important;
-    background-color: #f0f0f0;
-    position: sticky;
-    left: 0;
-    z-index: 3;
-    font-weight: bold;
-    width: 35px;
-}
-.matrix-table th:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 4;
-    background-color: #e9ecef;
-}
-
-.matrix-sticky-name {
-    text-align: left !important;
-    background-color: #f8f9fa;
-    position: sticky;
-    left: 35px;
-    z-index: 2;
-    font-weight: bold;
-}
-.matrix-table th:nth-child(2) {
-    position: sticky;
-    left: 35px;
-    z-index: 3;
-    background-color: #f8f9fa;
-    text-align: left !important;
-}
-
-/* Minimal CSS-tooltip för det rena tipset i matrisen */
-.matrix-tooltip-cell {
-    position: relative;
-    cursor: help;
-}
-
-.matrix-tooltip-box {
-    display: none;
-    position: absolute;
-    bottom: 130%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #212529;
-    color: #fff !important;
-    padding: 6px 10px;
-    border-radius: 5px;
-    font-size: 0.75rem;
-    font-weight: bold !important;
-    font-style: normal !important;
-    white-space: nowrap;
-    z-index: 999;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.matrix-tooltip-box::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 5px;
-    border-style: solid;
-    border-color: #212529 transparent transparent transparent;
-}
-
-.matrix-tooltip-cell:hover .matrix-tooltip-box {
-    display: block;
-}
-
-/* Matchrader färgindikatorer */
-tr.green, td.green { background-color: #d4edda !important; color: #155724; font-weight: bold; }
-tr.yellow, td.yellow { background-color: #fff3cd !important; color: #856404; }
-tr.red, td.red { background-color: #f8d7da !important; color: #721c24; }
-
-.trend-up, .trend-down {
-    font-size: 1.2rem;
-    margin-left: 6px;
-    vertical-align: middle;
-    cursor: help;
-}
-
-.date-cell-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tv-logo {
-    height: 14px;
-    vertical-align: middle;
-}
-
-.matrix-wrapper {
-    max-width: 100%;
-    overflow-x: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    margin-top: 15px;
-}
-
-/* Modals */
-.hidden {
-    display: none !important;
-}
-
-.modal {
-    position: fixed;
-    z-index: 2000;
-    left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-    background-color: #fff;
-    margin: 10% auto;
-    padding: 25px;
-    width: 80%;
-    max-width: 500px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    position: relative;
-}
-
-.rules-text p {
-    margin: 10px 0;
-    line-height: 1.5;
-}
-
-.close-btn {
-    position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #aaa;
-}
-
-.close-btn:hover {
-    color: #333;
-}
-
-/* Mobilanpassning för text */
-@media (max-width: 600px) {
-    h1 {
-        font-size: 1.8rem;
-    }
-}
+.tv-logo { height: 12px; margin-left: 5px; }
