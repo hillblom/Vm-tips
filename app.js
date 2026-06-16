@@ -44,10 +44,14 @@ function getBroadcasterHtml(match) {
     return `<span style="font-size:0.7rem; color:var(--text-muted)">-</span>`;
 }
 
+// Skapar en unik matchnyckel oberoende av vilket lag som står som hemma/borta i API:et
 function getMatchKey(match) {
     const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
     const awayTLA = nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???";
-    return `${homeTLA}-${awayTLA}`;
+    
+    // Sorterar förkortningarna alfabetiskt så att "KSA-URY" och "URY-KSA" ger samma unika nyckel
+    const ordered = [homeTLA, awayTLA].sort();
+    return `${ordered[0]}-${ordered[1]}`;
 }
 
 function getPredictionFromKey(userPredictions, key) {
@@ -73,7 +77,13 @@ function getUserStatsAtMatchLimit(user, limit = null) {
     toCount.forEach(match => {
         const prediction = getPredictionFromKey(userPredictions, getMatchKey(match));
         if (prediction !== "-") {
-            const [pH, pA] = prediction.split("-").map(Number);
+            const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
+            const ordered = [homeTLA, (nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???")].sort();
+            
+            let [pH, pA] = prediction.split("-").map(Number);
+            if (homeTLA !== ordered[0]) {
+                [pH, pA] = [pA, pH];
+            }
             const pts = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
             totalPoints += pts;
             if (pts === 12) p12++;
@@ -103,7 +113,14 @@ function renderMatches() {
         
         let points = "";
         if(match.status === "FINISHED" && prediction !== "-"){
-            const [pH, pA] = prediction.split("-").map(Number);
+            const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
+            const ordered = [homeTLA, (nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???")].sort();
+            
+            let [pH, pA] = prediction.split("-").map(Number);
+            if (homeTLA !== ordered[0]) {
+                [pH, pA] = [pA, pH];
+            }
+
             points = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
         }
 
@@ -212,13 +229,18 @@ function renderMatrix() {
     let headerHtml = "<th>Pos</th><th>Deltagare</th>";
     matches.forEach(m => {
         const key = getMatchKey(m);
+        
+        const currentHomeTLA = nameToTlaMap[m.homeTeam?.name] || m.homeTeam?.tla || "???";
+        const currentAwayTLA = nameToTlaMap[m.awayTeam?.name] || m.awayTeam?.tla || "???";
+        const displayKey = `${currentHomeTLA}-${currentAwayTLA}`;
+
         const homeFullName = teamNamesSE[m.homeTeam.name] || m.homeTeam.name;
         const awayFullName = teamNamesSE[m.awayTeam.name] || m.awayTeam.name;
         const resHtml = m.status === "FINISHED" ? `<div class="matrix-th-res">${m.score.fullTime.home}-${m.score.fullTime.away}</div>` : `<div class="matrix-th-res">-</div>`;
         
         headerHtml += `
             <th class="matrix-tooltip-cell">
-                <div class="matrix-th-match">${key}</div>
+                <div class="matrix-th-match">${displayKey}</div>
                 ${resHtml}
                 <span class="matrix-tooltip-box">${homeFullName} - ${awayFullName}</span>
             </th>`;
@@ -234,19 +256,39 @@ function renderMatrix() {
         let html = `<td class="matrix-sticky-pos">${i+1}</td><td class="matrix-sticky-name">${user}</td>`;
         
         matches.forEach(m => {
-            const pred = getPredictionFromKey(allPredictions[user], getMatchKey(m));
+            const key = getMatchKey(m);
+            const pred = getPredictionFromKey(allPredictions[user], key);
+            
             if (m.status === "FINISHED" || m.status === "IN_PLAY") {
-                const [pH, pA] = pred.split("-").map(Number);
+                const homeTLA = nameToTlaMap[m.homeTeam?.name] || m.homeTeam?.tla || "???";
+                const ordered = [homeTLA, (nameToTlaMap[m.awayTeam?.name] || m.awayTeam?.tla || "???")].sort();
+                
+                let [pH, pA] = pred.split("-").map(Number);
+                let displayPred = pred;
+                if (homeTLA !== ordered[0]) {
+                    [pH, pA] = [pA, pH];
+                    displayPred = `${pH}-${pA}`;
+                }
+
                 const pts = calculatePoints(m.score.fullTime.home, m.score.fullTime.away, pH, pA);
                 let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
                 
                 html += `<td class="${cls} matrix-tooltip-cell">
                             <div class="matrix-cell-pts">${pts}</div>
-                            <span class="matrix-tooltip-box">Tips: ${pred}</span>
+                            <span class="matrix-tooltip-box">Tips: ${displayPred}</span>
                          </td>`;
             } else {
+                const homeTLA = nameToTlaMap[m.homeTeam?.name] || m.homeTeam?.tla || "???";
+                const ordered = [homeTLA, (nameToTlaMap[m.awayTeam?.name] || m.awayTeam?.tla || "???")].sort();
+                
+                let displayPred = pred;
+                if (pred !== "-" && homeTLA !== ordered[0]) {
+                    const [pH, pA] = pred.split("-").map(Number);
+                    displayPred = `${pA}-${pH}`;
+                }
+
                 html += `<td>
-                            <div class="matrix-cell-pts text-muted">(${pred})</div>
+                            <div class="matrix-cell-pts text-muted">(${displayPred})</div>
                          </td>`;
             }
         });
@@ -281,7 +323,13 @@ function renderChart() {
             const userPredictions = allPredictions[user] || {};
             const prediction = getPredictionFromKey(userPredictions, key);
             if (prediction && prediction !== "-") {
-                const [pH, pA] = prediction.split("-").map(Number);
+                const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
+                const ordered = [homeTLA, (nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???")].sort();
+                
+                let [pH, pA] = prediction.split("-").map(Number);
+                if (homeTLA !== ordered[0]) {
+                    [pH, pA] = [pA, pH];
+                }
                 playerHistory[user].points += calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
             }
             matchScores.push({ name: user, points: playerHistory[user].points });
