@@ -2,7 +2,7 @@
     --primary-color: #007bff;
     --primary-dark: #0056b3;
     --text-muted: #6c757d;
-    --highlight-bg: #fff9c4;
+    --highlight-bg: #fff9c4; /* Ljusgul highlight-färg för vald användare */
 }
 
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
@@ -14,7 +14,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     padding: 30px;
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    transition: max-width 0.3s;
+    transition: max-width 0.3s ease-in-out; /* Mjuk övergång till full bredd */
 }
 .container.full-width { max-width: 98%; }
 
@@ -26,40 +26,48 @@ h1 { margin: 0; font-size: 2.4rem; color: #1a1a1a; }
 .tab-btn.active, .tab-btn:hover { background: var(--primary-color); color: #fff; }
 .tab-btn.info-btn { width: 45px; font-family: serif; font-style: italic; }
 
-.user-selector-container { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-.user-dropdown { padding: 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 150px; }
+.user-selector-container { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef; }
+.user-dropdown { padding: 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 150px; cursor: pointer; }
 
-.ranking-table { width: 100%; border-collapse: collapse; }
+/* Tabellstyling */
+.ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 .ranking-table th, .ranking-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-.ranking-table th { background: #fafafa; }
+.ranking-table th { background: #fafafa; font-weight: bold; color: #555; }
 
-tr.green { background: #e8f5e9; }
-tr.yellow { background: #fffde7; }
-tr.red { background: #ffebee; }
-tr.highlight-user-row { background: var(--highlight-bg) !important; font-weight: bold; }
+/* Färgmarkeringar för rader */
+tr.green { background: #e8f5e9; color: #1b5e20; font-weight: bold; }
+tr.yellow { background: #fffde7; color: #827717; }
+tr.red { background: #ffebee; color: #b71c1c; }
+tr.highlight-user-row { background: var(--highlight-bg) !important; font-weight: bold; color: #000 !important; }
 
-.matrix-wrapper { overflow-x: auto; max-height: 600px; }
-.matrix-table { border-collapse: collapse; font-size: 0.85rem; }
+/* Matris styling med sticky headers och tooltips */
+.matrix-wrapper { overflow-x: auto; max-height: 600px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; }
+.matrix-table { border-collapse: collapse; font-size: 0.85rem; width: 100%; }
 .matrix-table th, .matrix-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
+.matrix-table th { background: #fafafa; font-weight: bold; position: sticky; top: 0; z-index: 1; }
 
-.matrix-sticky-pos { position: sticky; left: 0; background: #eee !important; z-index: 2; width: 30px; }
-.matrix-sticky-name { position: sticky; left: 30px; background: #f9f9f9 !important; z-index: 2; text-align: left !important; min-width: 100px; }
+.matrix-sticky-pos { position: sticky; left: 0; background: #eee !important; z-index: 2; width: 30px; font-weight: bold; }
+.matrix-sticky-name { position: sticky; left: 30px; background: #f9f9f9 !important; z-index: 2; text-align: left !important; min-width: 100px; font-weight: bold; }
 
-/* Gör att grafen fyller ut resten av skärmens höjd dynamiskt */
-.chart-wrapper {
-    height: calc(100vh - 280px); /* Justerar höjden dynamiskt efter webbläsarfönstret */
-    min-height: 400px;           /* Säkerställer att den inte blir för platt på små skärmar */
-    margin-top: 20px;
-    width: 100%;
-    position: relative;          /* Krävs för att Chart.js ska kunna skala korrekt */
-}
-.hidden { display: none !important; }
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; }
-.modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; }
-.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; }
-
-.matrix-tooltip-cell { position: relative; }
-.matrix-tooltip-box { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; z-index: 10; font-size: 0.75rem; }
+.matrix-tooltip-cell { position: relative; cursor: help; }
+.matrix-tooltip-box { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; z-index: 10; font-size: 0.75rem; white-space: nowrap; }
 .matrix-tooltip-cell:hover .matrix-tooltip-box { display: block; }
 
-.tv-logo { height: 12px; margin-left: 5px; }
+/* Graf styling (DYNAMISK HÖJD) */
+.chart-wrapper {
+    height: calc(100vh - 280px); /* Skalar dynamiskt med webbläsaren */
+    min-height: 400px;
+    margin-top: 20px;
+    width: 100%;
+    position: relative;
+}
+
+.tv-logo { height: 12px; margin-left: 5px; vertical-align: middle; }
+.hidden { display: none !important; }
+
+/* Modal styling */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+.modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #aaa; }
+.close-btn:hover { color: #333; }
+.rules-text p { margin: 10px 0; line-height: 1.6; }
