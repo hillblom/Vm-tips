@@ -6,6 +6,7 @@ let currentUser = "";
 let matrixSortByRanking = true; 
 let activeTabBeforeRules = "matches"; 
 let hideFinishedMatches = false; 
+let trendChartInstance = null; // Sparar graf-instansen
 
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
@@ -411,6 +412,157 @@ function renderMatrix() {
     });
 }
 
+// GENERERA OCH RENDERA TRENDGRAFEN (NY)
+function renderChart() {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    // Hämta bara färdigspelade gruppspelsmatcher sorterade kronologiskt
+    const finishedMatches = allMatches
+        .filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED")
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+    if (finishedMatches.length === 0) {
+        ctx.style.display = "none";
+        return;
+    }
+    ctx.style.display = "block";
+
+    const users = Object.keys(allPredictions);
+    
+    // Labels för X-axeln (Match-keys, t.ex: GER-SCO, ESP-CRO...)
+    const labels = ["Start", ...finishedMatches.map(m => getMatchKey(m))];
+
+    // Strukturerad datalagring för att bygga linjerna
+    const playerHistory = {};
+    users.forEach(user => {
+        playerHistory[user] = {
+            points: 0,
+            history: [1] // Startposition (alla startar på samma linje symboliskt, eller justeras nedan)
+        };
+    });
+
+    // Loopa match för match och räkna ut ackumulerad poängställning sekventiellt
+    finishedMatches.forEach((match, matchIndex) => {
+        const key = getMatchKey(match);
+        const matchScores = [];
+
+        users.forEach(user => {
+            const userPredictions = allPredictions[user] || {};
+            const prediction = getPredictionFromKey(userPredictions, key);
+            if (prediction && prediction !== "-") {
+                const [pHome, pAway] = prediction.split("-").map(Number);
+                const pts = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pHome, pAway);
+                playerHistory[user].points += pts;
+            }
+            matchScores.push({ name: user, points: playerHistory[user].points });
+        });
+
+        // Sortera poängställningen efter denna specifika match
+        matchScores.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'sv'));
+
+        // Ge varje spelare dess placering (1 till X) efter denna match
+        matchScores.forEach((item, rankIdx) => {
+            playerHistory[item.name].history.push(rankIdx + 1);
+        });
+    });
+
+    // Fyll i startpositionen på ett snyggare sätt (samma som efter första matchen)
+    users.forEach(user => {
+        playerHistory[user].history[0] = playerHistory[user].history[1];
+    });
+
+    // Skapa unika men repeterbara färger för 33+ linjer baserat på namnet hash-sträng
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            let value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).slice(-2);
+        }
+        return color;
+    }
+
+    // Bygg ihop datasets för Chart.js
+    const datasets = users.map(user => {
+        const isCurrent = (user === currentUser);
+        const color = stringToColor(user);
+        
+        return {
+            label: user,
+            data: playerHistory[user].history,
+            borderColor: isCurrent ? '#ffc107' : color, // Highlighta vald spelare i guld/gul
+            backgroundColor: isCurrent ? '#ffc107' : color,
+            borderWidth: isCurrent ? 5 : 1.5,           // Tjockare linje för vald spelare
+            pointRadius: isCurrent ? 4 : 1,
+            tension: 0.2,                               // Flackare linjekurvor
+            fill: false,
+            z: isCurrent ? 999 : 1                      // Lägg valda spelarens linje överst
+        };
+    });
+
+    // Sortera datasets så att den markerade användaren ritas ut allra sist (hamnar överst i grafen)
+    datasets.sort((a, b) => (a.label === currentUser ? 1 : -1));
+
+    // Om det redan finns en graf, förstör den innan vi ritar en ny (förhindrar spökgraf-bugg)
+    if (trendChartInstance) {
+        trendChartInstance.destroy();
+    }
+
+    trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    reverse: true, // VÄND AXELN! Placering 1 ska vara högst upp, inte längst ner
+                    min: 1,
+                    max: users.length,
+                    ticks: {
+                        stepSize: 1,
+                        font: { size: 10 }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Placering i tabellen'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Matcher spelade'
+                    },
+                    ticks: {
+                        font: { size: 10 }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // Dölj legend högst upp, blir för rörigt med 33 namn där
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: Placering ${context.parsed.y}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 async function loadMatches(){
     try {
         const response = await fetch(API_URL + "?_cb=" + new Date().getTime());
@@ -420,9 +572,14 @@ async function loadMatches(){
         filterMatches();
         renderRanking();
         
+        // Uppdatera matris eller graf om fliken är öppen
         const viewMatrix = document.getElementById("view-matrix");
         if(viewMatrix && !viewMatrix.classList.contains("hidden")) { 
             renderMatrix(); 
+        }
+        const viewChart = document.getElementById("view-chart");
+        if(viewChart && !viewChart.classList.contains("hidden")) {
+            renderChart();
         }
         
         const luEl = document.getElementById("lastUpdated");
@@ -443,11 +600,13 @@ function setupTabs() {
     const btnMatches = document.getElementById("btn-matches");
     const btnRanking = document.getElementById("btn-ranking");
     const btnMatrix = document.getElementById("btn-matrix"); 
+    const btnChart = document.getElementById("btn-chart"); // NY
     const btnRules = document.getElementById("btn-rules");
     
     const viewMatches = document.getElementById("view-matches");
     const viewRanking = document.getElementById("view-ranking");
     const viewMatrix = document.getElementById("view-matrix"); 
+    const viewChart = document.getElementById("view-chart"); // NY
     const rulesModal = document.getElementById("rules-modal");
     const closeBtn = document.querySelector(".close-btn");
     const container = document.getElementById("main-container");
@@ -457,10 +616,12 @@ function setupTabs() {
         if(btnMatches) btnMatches.classList.remove("active");
         if(btnRanking) btnRanking.classList.remove("active");
         if(btnMatrix) btnMatrix.classList.remove("active");
+        if(btnChart) btnChart.classList.remove("active"); // NY
         
         if(viewMatches) viewMatches.classList.add("hidden");
         if(viewRanking) viewRanking.classList.add("hidden");
         if(viewMatrix) viewMatrix.classList.add("hidden");
+        if(viewChart) viewChart.classList.add("hidden"); // NY
         
         if(container) container.classList.remove("full-width");
         if(filterWrapper) filterWrapper.style.display = "none";
@@ -498,6 +659,19 @@ function setupTabs() {
             if(container) container.classList.add("full-width");
             activeTabBeforeRules = "matrix";
             renderMatrix(); 
+        });
+    }
+
+    // NY TAB-LYSSNARE FÖR GRAF
+    if(btnChart && viewChart) {
+        btnChart.addEventListener("click", () => {
+            clearActiveTabs();
+            btnRules.classList.remove("active");
+            btnChart.classList.add("active");
+            viewChart.classList.remove("hidden");
+            if(container) container.classList.add("full-width"); // Ge grafen full bredd
+            activeTabBeforeRules = "chart";
+            renderChart();
         });
     }
 
@@ -550,10 +724,9 @@ async function start(){
             localStorage.setItem("selectedUser", currentUser);
             
             filterMatches();
-            const viewRanking = document.getElementById("view-ranking");
-            if(viewRanking && !viewRanking.classList.contains("hidden")) renderRanking();
-            const viewMatrix = document.getElementById("view-matrix");
-            if(viewMatrix && !viewMatrix.classList.contains("hidden")) renderMatrix();
+            if(document.getElementById("view-ranking") && !document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
+            if(document.getElementById("view-matrix") && !document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
+            if(document.getElementById("view-chart") && !document.getElementById("view-chart").classList.contains("hidden")) renderChart(); // NY
         });
     }
     
