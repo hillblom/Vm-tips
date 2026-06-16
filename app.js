@@ -204,7 +204,8 @@ function renderChart() {
         data: { labels: ["Start", ...finished.map((_, i) => i+1)], datasets },
         options: { 
             responsive: true, 
-            maintainAspectRatio: false,
+            maintainAspectRatio: false, // Mycket viktigt för att CSS-höjden ska gälla!
+            resizeDelay: 100,            // Väntar 100ms efter resize innan den ritar om för bättre prestanda
             plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true } }
         }
