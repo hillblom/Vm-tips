@@ -9,15 +9,33 @@ let trendChartInstance = null;
 
 const teamNamesSE = {
     "Algeria": "Algeriet", "Argentina": "Argentina", "Australia": "Australien", "Austria": "Österrike",
-    "Belgium": "Belgien", "Brazil": "Brasilien", "Canada": "Kanada", "Croatia": "Kroatien",
-    "Czechia": "Tjeckien", "Denmark": "Danmark", "England": "England", "France": "Frankrike",
-    "Germany": "Tyskland", "Italy": "Italien", "Mexico": "Mexiko", "Morocco": "Marocko",
-    "Netherlands": "Nederländerna", "Norway": "Norge", "Portugal": "Portugal", "Spain": "Spanien",
-    "Sweden": "Sverige", "Switzerland": "Schweiz", "United States": "USA", "Uruguay": "Uruguay"
+    "Belgium": "Belgien", "Bosnia and Herzegovina": "Bosnien", "Bosnia-Herzegovina": "Bosnien", "Brazil": "Brasilien",
+    "Canada": "Kanada", "Cape Verde": "Kap Verde", "Cape-Verde": "Kap Verde", "Colombia": "Colombia",
+    "Croatia": "Kroatien", "Curaçao": "Curacao", "Curacao": "Curacao", "Czech Republic": "Tjeckien",
+    "Czechia": "Tjeckien", "DR Kongo": "DR Kongo", "DR Congo": "DR Kongo", "Ecuador": "Ecuador", "Egypt": "Egypten",
+    "El Salvador": "El Salvador", "England": "England", "France": "Frankrike", "Germany": "Tyskland",
+    "Ghana": "Ghana", "Haiti": "Haiti", "Hait": "Haiti", "Iran": "Iran", "Iraq": "Irak", "Ivory Coast": "Elfenbenskusten",
+    "Japan": "Japan", "Jordan": "Jordanien", "Mexico": "Mexiko", "Morocco": "Marocko",
+    "Netherlands": "Nederländerna", "New Zealand": "Nya Zeeland", "Norway": "Norge", "Panama": "Panama",
+    "Paraguay": "Paraguay", "Portugal": "Portugal", "Qatar": "Qatar", "Saudi Arabia": "Saudiarabien", "Saudi-Arabia": "Saudiarabien",
+    "Scotland": "Skottland", "Senegal": "Senegal", "South Africa": "Sydafrika", "South Korea": "Sydkorea",
+    "Spain": "Spanien", "Sweden": "Sverige", "Switzerland": "Schweiz", "Tunisia": "Tunisien",
+    "Turkey": "Turkiet", "United States": "USA", "Uruguay": "Uruguay", "Uzbekistan": "Uzbekistan"
 };
 
 const nameToTlaMap = {
-    "Argentina": "ARG", "Brazil": "BRA", "France": "FRA", "Germany": "GER", "Spain": "ESP", "Sweden": "SWE"
+    "Algeria": "ALG", "Argentina": "ARG", "Australia": "AUS", "Austria": "AUT",
+    "Belgium": "BEL", "Bosnia and Herzegovina": "BIH", "Bosnia-Herzegovina": "BIH", "Brazil": "BRA",
+    "Canada": "CAN", "Cape Verde": "CPV", "Cape-Verde": "CPV", "Colombia": "COL",
+    "Croatia": "CRO", "Curaçao": "CUW", "Curacao": "CUW", "Czech Republic": "CZE", "Czechia": "CZE",
+    "DR Congo": "COD", "DR Kongo": "COD", "Ecuador": "ECU", "Egypt": "EGY", "El Salvador": "SLV",
+    "England": "ENG", "France": "FRA", "Germany": "GER", "Ghana": "GHA", "Haiti": "HAI",
+    "Iran": "IRN", "Iraq": "IRQ", "Ivory Coast": "CIV", "Japan": "JPN", "Jordan": "JOR",
+    "Mexico": "MEX", "Morocco": "MAR", "Netherlands": "NED", "New Zealand": "NZL",
+    "Norway": "NOR", "Panama": "PAN", "Paraguay": "PAR", "Portugal": "POR", "Qatar": "QAT",
+    "Saudi Arabia": "KSA", "Saudi-Arabia": "KSA", "Scotland": "SCO", "Senegal": "SEN", "South Africa": "RSA",
+    "South Korea": "KOR", "Spain": "ESP", "Sweden": "SWE", "Switzerland": "SUI",
+    "Tunisia": "TUN", "Turkey": "TUR", "United States": "USA", "Uruguay": "URY", "Uzbekistan": "UZB"
 };
 
 function getBroadcasterHtml(match) {
@@ -65,10 +83,8 @@ function getUserStatsAtMatchLimit(user, limit = null) {
     return { totalPoints, p12, p0 };
 }
 
-// Räknar ut trend-ikoner (senaste 3 matcherna)
 function getTrendIconsHtml(user, finishedMatches) {
     const userPredictions = allPredictions[user] || {};
-    // Ta de tre senaste färdigspelade matcherna
     const lastThree = finishedMatches.slice(-3);
     if (lastThree.length === 0) return `<span class="trend-dash">—</span>`;
 
@@ -167,16 +183,20 @@ function renderMatrix() {
     const tbody = document.getElementById("matrix-body");
     const matches = allMatches.filter(m => m.stage === "GROUP_STAGE").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    // Skapa headers med Match-kod överst och faktiskt resultat under (om färdigt)
+    // Headers med matchkoder och lagnamns-tooltips vid hovring
     let headerHtml = "<th>Pos</th><th>Deltagare</th>";
     matches.forEach(m => {
         const key = getMatchKey(m);
-        if (m.status === "FINISHED") {
-            const res = `${m.score.fullTime.home}-${m.score.fullTime.away}`;
-            headerHtml += `<th><div class="matrix-th-match">${key}</div><div class="matrix-th-res">${res}</div></th>`;
-        } else {
-            headerHtml += `<th><div class="matrix-th-match">${key}</div><div class="matrix-th-res">-</div></th>`;
-        }
+        const homeFullName = teamNamesSE[m.homeTeam.name] || m.homeTeam.name;
+        const awayFullName = teamNamesSE[m.awayTeam.name] || m.awayTeam.name;
+        const resHtml = m.status === "FINISHED" ? `<div class="matrix-th-res">${m.score.fullTime.home}-${m.score.fullTime.away}</div>` : `<div class="matrix-th-res">-</div>`;
+        
+        headerHtml += `
+            <th class="matrix-tooltip-cell">
+                <div class="matrix-th-match">${key}</div>
+                ${resHtml}
+                <span class="matrix-tooltip-box">${homeFullName} - ${awayFullName}</span>
+            </th>`;
     });
     header.innerHTML = headerHtml;
     tbody.innerHTML = "";
@@ -190,18 +210,22 @@ function renderMatrix() {
         
         matches.forEach(m => {
             const pred = getPredictionFromKey(allPredictions[user], getMatchKey(m));
-            if (m.status === "FINISHED") {
+            if (m.status === "FINISHED" || m.status === "IN_PLAY") {
                 const [pH, pA] = pred.split("-").map(Number);
                 const pts = calculatePoints(m.score.fullTime.home, m.score.fullTime.away, pH, pA);
                 let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
                 
-                // Visar poäng stort, och gissat tips i rutan
+                // Färdigspelade/pågående matcher: Visar poäng, tipset i tooltip
                 html += `<td class="${cls} matrix-tooltip-cell">
                             <div class="matrix-cell-pts">${pts}</div>
-                            <div class="matrix-cell-pred">${pred}</div>
+                            <span class="matrix-tooltip-box">Tips: ${pred}</span>
                          </td>`;
             } else {
-                html += `<td><div class="matrix-cell-pred">${pred}</div></td>`;
+                // Kommande matcher: Visar ett frågetecken, tipset inom parentes i sin tooltip
+                html += `<td class="matrix-tooltip-cell">
+                            <div class="matrix-cell-pts text-muted">?</div>
+                            <span class="matrix-tooltip-box">Tips: (${pred})</span>
+                         </td>`;
             }
         });
         row.innerHTML = html;
