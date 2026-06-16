@@ -84,22 +84,7 @@ function getUserStatsAtMatchLimit(user, limit = null) {
 }
 
 function getTrendIconsHtml(user, finishedMatches) {
-    const userPredictions = allPredictions[user] || {};
-    const lastThree = finishedMatches.slice(-3);
-    if (lastThree.length === 0) return `<span class="trend-dash">—</span>`;
-
-    return lastThree.map(match => {
-        const key = getMatchKey(match);
-        const pred = getPredictionFromKey(userPredictions, key);
-        if (pred === "-") return `<span class="trend-icon trend-dash">—</span>`;
-        
-        const [pH, pA] = pred.split("-").map(Number);
-        const pts = calculatePoints(match.score.fullTime.home, match.score.fullTime.away, pH, pA);
-        
-        if (pts === 12) return `<span class="trend-icon trend-green">●</span>`;
-        if (pts > 0) return `<span class="trend-icon trend-yellow">●</span>`;
-        return `<span class="trend-icon trend-red">●</span>`;
-    }).join("");
+    return ""; 
 }
 
 function renderMatches() {
@@ -148,19 +133,60 @@ function renderRanking() {
     tbody.innerHTML = "";
 
     const finishedMatches = allMatches.filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
+    const users = Object.keys(allPredictions);
 
-    let ranking = Object.keys(allPredictions).map(user => {
+    let ranking = users.map(user => {
         const stats = getUserStatsAtMatchLimit(user);
         return { name: user, total: stats.totalPoints, p12: stats.p12, p0: stats.p0 };
     });
 
     ranking.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
+    const trendMap = {};
+    let maxClimb = 0; 
+    let maxDrop = 0;  
+
+    if (finishedMatches.length > 0) {
+        const currentRanks = {};
+        ranking.forEach((player, idx) => {
+            currentRanks[player.name] = idx + 1;
+        });
+
+        const limit = Math.max(0, finishedMatches.length - 3);
+        const oldScores = users.map(u => ({ name: u, pts: getUserStatsAtMatchLimit(u, limit).totalPoints }));
+        oldScores.sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
+        
+        const oldRanks = {};
+        oldScores.forEach((player, idx) => {
+            oldRanks[player.name] = idx + 1;
+        });
+
+        users.forEach(user => {
+            const current = currentRanks[user];
+            const old = oldRanks[user];
+            const diff = old - current; 
+
+            trendMap[user] = diff;
+
+            if (diff > 0 && diff > maxClimb) maxClimb = diff;
+            if (diff < 0 && Math.abs(diff) > maxDrop) maxDrop = Math.abs(diff);
+        });
+    }
+
     ranking.forEach((player, i) => {
         const row = document.createElement("tr");
         if (player.name === currentUser) row.classList.add("highlight-user-row");
         
-        const trendHtml = getTrendIconsHtml(player.name, finishedMatches);
+        let trendHtml = "";
+        const userDiff = trendMap[player.name] || 0;
+
+        if (finishedMatches.length > 0 && userDiff !== 0) {
+            if (userDiff > 0 && userDiff === maxClimb) {
+                trendHtml = `<span class="trend-icon trend-green" title="Klättrat mest: +${userDiff} platser">▲</span>`;
+            } else if (userDiff < 0 && Math.abs(userDiff) === maxDrop) {
+                trendHtml = `<span class="trend-icon trend-red" title="Fallit mest: -${Math.abs(userDiff)} platser">▼</span>`;
+            }
+        }
 
         row.innerHTML = `
             <td>${i + 1}</td>
@@ -183,7 +209,6 @@ function renderMatrix() {
     const tbody = document.getElementById("matrix-body");
     const matches = allMatches.filter(m => m.stage === "GROUP_STAGE").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    // Headers med matchkoder och lagnamns-tooltips vid hovring
     let headerHtml = "<th>Pos</th><th>Deltagare</th>";
     matches.forEach(m => {
         const key = getMatchKey(m);
@@ -215,16 +240,13 @@ function renderMatrix() {
                 const pts = calculatePoints(m.score.fullTime.home, m.score.fullTime.away, pH, pA);
                 let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
                 
-                // Färdigspelade/pågående matcher: Visar poäng, tipset i tooltip
                 html += `<td class="${cls} matrix-tooltip-cell">
                             <div class="matrix-cell-pts">${pts}</div>
                             <span class="matrix-tooltip-box">Tips: ${pred}</span>
                          </td>`;
             } else {
-                // Kommande matcher: Visar ett frågetecken, tipset inom parentes i sin tooltip
-                html += `<td class="matrix-tooltip-cell">
-                            <div class="matrix-cell-pts text-muted">?</div>
-                            <span class="matrix-tooltip-box">Tips: (${pred})</span>
+                html += `<td>
+                            <div class="matrix-cell-pts text-muted">(${pred})</div>
                          </td>`;
             }
         });
