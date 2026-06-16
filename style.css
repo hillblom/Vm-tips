@@ -29,7 +29,7 @@ h1 { margin: 0; font-size: 2.4rem; color: #1a1a1a; }
 .user-selector-container { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef; }
 .user-dropdown { padding: 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 150px; cursor: pointer; }
 
-/* Tabell- och färgstyling */
+/* Tabeller */
 .ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 .ranking-table th, .ranking-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
 .ranking-table th { background: #fafafa; font-weight: bold; color: #555; }
@@ -39,42 +39,60 @@ tr.yellow, td.yellow { background: #fffde7 !important; color: #827717 !important
 tr.red, td.red { background: #ffebee !important; color: #b71c1c !important; }
 tr.highlight-user-row { background: var(--highlight-bg) !important; font-weight: bold; color: #000 !important; }
 
-/* Trend-ikoner (Runda prickar) */
+/* Trendikoner */
 .ranking-name-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .trend-container { display: flex; gap: 4px; margin-left: 15px; font-size: 1.1rem; line-height: 1; }
-.trend-icon { display: inline-block; }
 .trend-green { color: #28a745; }
 .trend-yellow { color: #ffc107; }
 .trend-red { color: #dc3545; }
 .trend-dash { color: #ccc; font-weight: bold; font-size: 0.9rem; }
 
-/* Matris styling med DYNAMISK HÖJD */
+/* KOMPAKT MATRIS MED ENHETLIG HÖJD */
 .matrix-wrapper { 
     overflow-x: auto; 
     overflow-y: auto;
-    height: calc(100vh - 280px); /* Fyller ut höjden dynamiskt */
+    height: calc(100vh - 280px);
     min-height: 400px;
     margin-top: 20px; 
     border: 1px solid #ddd; 
     border-radius: 8px; 
 }
 .matrix-table { border-collapse: collapse; font-size: 0.85rem; width: 100%; }
-.matrix-table th, .matrix-table td { border: 1px solid #ddd; padding: 6px 10px; text-align: center; white-space: nowrap; }
+.matrix-table th, .matrix-table td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; white-space: nowrap; }
 
-/* Sticky design för Matrisrubriker */
-.matrix-table th { background: #f8f9fa; font-weight: bold; position: sticky; top: 0; z-index: 3; border-bottom: 2px solid #ccc; }
-.matrix-th-match { font-weight: bold; color: #333; }
-.matrix-th-res { font-size: 0.75rem; color: #007bff; margin-top: 20px; }
+/* Sticky headers och rader */
+.matrix-table th { background: #f8f9fa; position: sticky; top: 0; z-index: 3; border-bottom: 2px solid #ccc; }
+.matrix-th-match { font-weight: bold; color: #333; line-height: 1.1; }
+.matrix-th-res { font-size: 0.75rem; color: #007bff; margin-top: 2px; font-weight: bold; }
 
-/* Sticky kolumner för position och namn */
-.matrix-sticky-pos { position: sticky; left: 0; background: #eee !important; z-index: 4; width: 30px; font-weight: bold; }
-.matrix-sticky-name { position: sticky; left: 40px; background: #f9f9f9 !important; z-index: 4; text-align: left !important; min-width: 100px; font-weight: bold; border-right: 2px solid #ddd !important; }
+.matrix-sticky-pos { position: sticky; left: 0; background: #eee !important; z-index: 4; width: 25px; font-weight: bold; }
+.matrix-sticky-name { position: sticky; left: 25px; background: #f9f9f9 !important; z-index: 4; text-align: left !important; min-width: 90px; font-weight: bold; border-right: 2px solid #ddd !important; }
 
-/* Celler i matrisen */
-.matrix-cell-pts { font-size: 0.95rem; font-weight: bold; }
-.matrix-cell-pred { font-size: 0.75rem; opacity: 0.8; margin-top: 20px; }
+/* Matris cell-innehåll */
+.matrix-cell-pts { font-size: 0.95rem; font-weight: bold; padding: 2px 0; }
+.text-muted { color: #aaa; }
 
-/* Graf & Övrigt */
+/* INTERAKTIV HOVRING / TOOLTIPS */
+.matrix-tooltip-cell { position: relative; }
+.matrix-tooltip-box { 
+    display: none; 
+    position: absolute; 
+    bottom: 105%; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: #212529; 
+    color: #fff !important; 
+    padding: 6px 10px; 
+    border-radius: 6px; 
+    z-index: 99; 
+    font-size: 0.75rem; 
+    white-space: nowrap; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-weight: bold !important;
+}
+.matrix-tooltip-cell:hover .matrix-tooltip-box { display: block; }
+
+/* Graf */
 .chart-wrapper {
     height: calc(100vh - 280px);
     min-height: 400px;
@@ -86,6 +104,7 @@ tr.highlight-user-row { background: var(--highlight-bg) !important; font-weight:
 .tv-logo { height: 12px; margin-left: 5px; vertical-align: middle; }
 .hidden { display: none !important; }
 
+/* Modal */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; }
 .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; }
 .close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; }
