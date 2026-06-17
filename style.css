@@ -168,7 +168,7 @@ table {
 }
 
 th, td {
-    padding: 10px 12px;
+    padding: 1px 12px;
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -550,6 +550,15 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     }
 }
 
+#view-matches tbody tr {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important; /* Matchar din tabells linjefärg */
+}
+
+/* Säkerställ att tabellen tillåter kantlinjer på rader */
+#view-matches {
+    border-collapse: collapse !important;
+}
+
 /* --- FIX FÖR DESKTOP: LÄGG TILL DETTA UTANFÖR DIN @MEDIA-REGEL --- */
 
 /* Gör så att datum/tid och logga ligger på samma rad på datorn */
@@ -560,6 +569,12 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     justify-content: flex-start; /* Håller dem samlade till vänster på datorn */
     gap: 8px; /* Avstånd mellan datum/tid och loggan */
     border-bottom: none; /* Snyggar till flex-ramen */
+}
+
+#view-matches th:nth-child(3), #view-matches td:nth-child(3),
+#view-matches th:nth-child(4), #view-matches td:nth-child(4),
+#view-matches th:nth-child(5), #view-matches td:nth-child(5) {
+    text-align: center !important;
 }
 
 /* Gör så att datum och tid ligger på en och samma rad på datorn */
@@ -576,6 +591,19 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
         vertical-align: middle !important;
     }
 
+    #view-matches table {
+        width: auto !important;
+        min-width: max-content !important; /* NYTT: Gör att tabellen (och översta linjen) blir precis så bred som kolumnerna kräver */
+        border-collapse: collapse !important;
+    }
+
+    /* Låt kolumnerna ha kvar sina naturliga, kompakta bredder utan att bryta rader i onödan */
+    #view-matches th, 
+    #view-matches td {
+        white-space: nowrap !important; /* Hindrar texten från att radbrytas, vilket håller raderna låga och snygga */
+        padding: 3px 3px !important;   /* Ger lite skön luft mellan kolumnerna i sidled */
+    }
+    
     /* Gör den första cellen till en Flexbox-rad */
     #view-matches td.match-meta-cell {
         display: flex !important;

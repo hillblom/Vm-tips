@@ -141,24 +141,24 @@ function renderMatches() {
         }
 
         const date = new Date(match.utcDate);
-// Vi separerar datum och tid i JS för full kontroll
-const onlyDate = date.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }); // Ex: "16 juni" eller "2026-06-16"
-const onlyTime = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+        // Vi separerar datum och tid i JS för full kontroll
+        const onlyDate = date.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }); // Ex: "16 juni" eller "2026-06-16"
+        const onlyTime = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
-row.innerHTML = `
-    <td class="match-meta-cell">
-        <div class="date-time-stack">
-            <span class="match-d">${onlyDate}</span>
-            <span class="match-t">${onlyTime}</span>
-        </div>
-        ${getBroadcasterHtml(match)}
-    </td>
-    <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
-    <td>${homeScore} - ${awayScore}</td>
-    <td>${prediction}</td>
-    <td>${points}</td>
-    <td>${match.status === "FINISHED" ? "Fulltid" : "Kommande"}</td>
-`;
+        row.innerHTML = `
+            <td class="match-meta-cell">
+                <div class="date-time-stack">
+                    <span class="match-d">${onlyDate}</span>
+                    <span class="match-t">${onlyTime}</span>
+                </div>
+                ${getBroadcasterHtml(match)}
+            </td>
+            <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
+            <td>${homeScore}-${awayScore}</td>
+            <td>${prediction}</td>
+            <td>${points}</td>
+            <td>${match.status === "FINISHED" ? "Fulltid" : (match.status === "IN_PLAY" || match.status === "PAUSED" || match.status === "LIVE" ? "Pågår" : "Kommande")}</td>
+        `;
         tbody.appendChild(row);
     });
 }
@@ -290,9 +290,14 @@ function renderMatrix() {
         const key = getMatchKey(m);
         const homeFullName = teamNamesSE[m.homeTeam.name] || m.homeTeam.name;
         const awayFullName = teamNamesSE[m.awayTeam.name] || m.awayTeam.name;
-        const resHtml = m.status === "FINISHED" ? `<div class="matrix-th-res">${m.score.fullTime.home}-${m.score.fullTime.away}</div>` : `<div class="matrix-th-res">-</div>`;
-        
-        headerHtml += `
+        let resHtml = `<div class="matrix-th-res">-</div>`;
+        if (m.status === "FINISHED") {
+            resHtml = `<div class="matrix-th-res">${m.score.fullTime.home ?? 0}-${m.score.fullTime.away ?? 0}</div>`;
+        } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
+            // Lägger till parenteser runt liveresultatet på översta raden
+            resHtml = `<div class="matrix-th-res">(${m.score.fullTime.home ?? 0}-${m.score.fullTime.away ?? 0})</div>`;
+        }        
+            headerHtml += `
             <th class="matrix-tooltip-cell">
                 <div class="matrix-th-match">${key}</div>
                 ${resHtml}
@@ -338,19 +343,28 @@ function renderMatrix() {
             const key = getMatchKey(m);
             const pred = getPredictionFromKey(allPredictions[user], key);
             
-            if (m.status === "FINISHED" || m.status === "IN_PLAY") {
-                const pts = calculatePointsAdvanced(m, pred);
-                let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
-                
-                html += `<td class="${cls} matrix-tooltip-cell">
-                            <div class="matrix-cell-pts">${pts}</div>
-                            <span class="matrix-tooltip-box">${pred}</span>
-                         </td>`;
-            } else {
-                html += `<td>
-                            <div class="matrix-cell-pts text-muted">(${pred})</div>
-                         </td>`;
-            }
+            if (m.status === "FINISHED") {
+            // Spelad match = vanliga klara färger och poäng
+            const pts = calculatePointsAdvanced(m, pred);
+            let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
+            html += `<td class="${cls} matrix-tooltip-cell">
+                        <div class="matrix-cell-pts">${pts}</div>
+                        <span class="matrix-tooltip-box">${pred}</span>
+                    </td>`;
+        } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
+    // Pågående match = räkna ut poäng, behåll färgkodning men lägg poängen inom parentes (och kursivt)
+            const pts = calculatePointsAdvanced(m, pred);
+            let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
+            html += `<td class="${cls} matrix-tooltip-cell">
+                        <div class="matrix-cell-pts text-muted"><em>(${pts})</em></div>
+                        <span class="matrix-tooltip-box">${pred}</span>
+                    </td>`;
+        } else {
+            // Kommande match = visa bara tipset inom parentes
+            html += `<td>
+                        <div class="matrix-cell-pts text-muted">(${pred})</div>
+                    </td>`;
+        }
         });
         row.innerHTML = html;
         tbody.appendChild(row);
@@ -469,6 +483,13 @@ async function start() {
     const respM = await fetch(API_URL + "?t=" + Date.now());
     const data = await respM.json();
     allMatches = data.matches;
+
+   const now = new Date();
+    const timeStr = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const updatedEl = document.getElementById("last-updated");
+    if (updatedEl) {
+        updatedEl.innerText = `Uppdaterad: ${timeStr}`;
+    } 
     
     // RENDERAR ALLT PÅ REKTIGT NÄR API-SVARET HAR LANDAT:
     renderMatches();
