@@ -149,6 +149,7 @@ function renderMatches() {
             <td class="match-meta-cell">
                 <div class="date-time-stack">
                     <span class="match-d">${onlyDate}</span>
+                    <br>
                     <span class="match-t">${onlyTime}</span>
                 </div>
                 ${getBroadcasterHtml(match)}

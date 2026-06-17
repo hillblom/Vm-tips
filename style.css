@@ -560,14 +560,18 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 
 /* --- FIX FÖR DESKTOP: LÄGG TILL DETTA UTANFÖR DIN @MEDIA-REGEL --- */
 
+/* ==========================================================================
+   1. DESKTOP-REGLER (Ligger först så att mobilen kan köra över dem sen)
+   ========================================================================== */
+
 /* Gör så att datum/tid och logga ligger på samma rad på datorn */
 #view-matches td.match-meta-cell {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: flex-start; /* Håller dem samlade till vänster på datorn */
-    gap: 8px; /* Avstånd mellan datum/tid och loggan */
-    border-bottom: none; /* Snyggar till flex-ramen */
+    justify-content: flex-start; 
+    gap: 8px; 
+    border-bottom: none; 
 }
 
 #view-matches th:nth-child(3), #view-matches td:nth-child(3),
@@ -580,126 +584,112 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 #view-matches .date-time-stack {
     display: flex;
     flex-direction: row;
-    gap: 5px; /* Ett litet mellanrum mellan datumet och klockslaget */
+    gap: 5px; 
 }
 
-/* --- CENTRERING AV HEADERN (KORRIGERADE KLASSNAMN) --- */
-.header-container {
+/* Centrera logga och klocka i headern */
+.header, #header-container, .app-header {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
     width: 100% !important;
-    margin-bottom: 15px;
 }
 
-/* Centrera flikarna */
-.main-tabs, .tabs {
+/* Centrera flikarna (Matcher, Tabell, Matris) */
+.nav-tabs, .tab-container, .tabs {
     display: flex !important;
     justify-content: center !important; 
     width: 100% !important;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1px;
+    border-bottom: 1px solid #dee2e6; 
 }
 
 /* Centrera Deltagare-dropdownen och kryssrutan */
-.user-selector-container {
+.filter-container, .user-selector-zone {
     display: flex !important;
     justify-content: center !important; 
     align-items: center !important;
     gap: 15px !important;
     width: 100% !important;
-    margin: 10px 0 15px 0 !important;
+    margin: 10px 0 !important;
 }
 
 
-/* --- MOBILBLOCKET (MAX 480PX) --- */
+/* ==========================================================================
+   2. MOBILBLOCK (Måste ligga absolut längst ner i filen för att gälla!)
+   ========================================================================== */
 @media (max-width: 480px) {
-    /* 1. Ta bort padding på kortet så tabellinjen går hela vägen ut till skärmkanterna */
-    .card {
-        padding: 15px 0px !important; /* 0px på sidorna gör att linjerna når kanten */
-        border-radius: 0px !important; /* Valfritt: Snyggare på mobil när linjen går hela vägen */
-        box-shadow: none !important;
-        background: transparent !important;
+    /* Tvinga tunna rader i matchtabellen */
+    #view-matches td {
+        padding: 6px 8px !important;
+        vertical-align: middle !important;
     }
 
-    /* 2. Tvinga matchvyn att hålla sig till 100% bredd utan scroll */
     #view-matches {
         width: 100% !important;
-        overflow-x: hidden !important; /* Ändrat till hidden: Stoppar sidscroll helt */
+        overflow-x: auto !important; 
+        -webkit-overflow-scrolling: touch; 
     }
 
     #view-matches table {
         width: 100% !important;
-        max-width: 100% !important;
-        table-layout: fixed !important; /* Tvingar kolumnerna att lyda våra bredder nedan */
+        max-width: 100% !important; 
+        min-width: unset !important; 
+        table-layout: auto !important; 
         border-collapse: collapse !important;
     }
 
-    /* 3. Sätt fasta, smarta mobilbredder i procent så allt får plats i Portrait */
-    #view-matches th:nth-child(1), #view-matches td:nth-child(1) { width: 23% !important; } /* Datum + Logga */
-    #view-matches th:nth-child(2), #view-matches td:nth-child(2) { width: 39% !important; } /* Match (Lagnamn) */
-    #view-matches th:nth-child(3), #view-matches td:nth-child(3) { width: 14% !important; } /* Resultat */
-    #view-matches th:nth-child(4), #view-matches td:nth-child(4) { width: 12% !important; } /* Tips */
-    #view-matches th:nth-child(5), #view-matches td:nth-child(5) { width: 12% !important; } /* Poäng */
-    /* (Status/Fulltid döljer vi på mobilen, det syns ändå på färgerna och resultatet!) */
-    #view-matches th:nth-child(6), #view-matches td:nth-child(6) { display: none !important; }
-
-    /* 4. Låt lagnamnen radbrytas och bli kompakta så de inte trycker ut skärmen */
-    #view-matches td:nth-child(2) {
-        white-space: normal !important; /* Tillåter radbrytning för långa lagnamn */
-        word-break: break-word !important;
-        font-size: 0.8rem !important;
-        padding-left: 4px !important;
-        padding-right: 4px !important;
-    }
-
-    /* 5. Finjustera padding för övriga kolumner */
+    /* Generell stil för tabellceller */
     #view-matches th, 
     #view-matches td {
-        padding: 6px 2px !important; /* Extremt tight och kompakt i sidled */
-        vertical-align: middle !important;
-    }
-
-    /* Resultat, Tips och Poäng-texten */
-    #view-matches td:nth-child(3), 
-    #view-matches td:nth-child(4), 
-    #view-matches td:nth-child(5) {
-        font-size: 0.85rem !important;
+        white-space: nowrap; 
+        padding: 3px 3px !important;   
     }
     
-    /* Datum-cellen som flexbox */
+    /* 1. Datum/tid-cellen som en vanlig stabil tabellcell på mobilen */
     #view-matches td.match-meta-cell {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 2px !important;
+        display: table-cell !important;    
+        vertical-align: middle !important; 
+        min-width: 80px !important;
+        white-space: nowrap !important;
         border-bottom: none !important;
-        padding-left: 6px !important; /* Lite luft från skärmkanten */
+        padding-left: 6px !important;
     }
 
+    /* 2. Nu med full tyngd (#view-matches) för att utplåna desktop-regeln! */
     #view-matches .date-time-stack {
-        display: flex !important;
-        flex-direction: column !important;
-        line-height: 1.1 !important;
+        display: inline-flex !important;   
+        flex-direction: column !important; /* TVINGAR nu ner klockslaget under datumet */
+        justify-content: center !important;
+        vertical-align: middle !important; 
         text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     #view-matches .match-d {
+        display: block !important;
+        white-space: nowrap !important;
         font-size: 0.7rem !important;
         font-weight: 500;
+        line-height: 1.1 !important;
     }
 
     #view-matches .match-t {
+        display: block !important;
+        white-space: nowrap !important; 
         font-size: 0.65rem !important;
-        color: var(--text-muted);
+        color: var(--text-muted) !important;
+        line-height: 1.1 !important;
     }
 
+    /* 3. TV-logotypen centrerar i höjdled mot texten */
     #view-matches .tv-logo {
-        height: 10px !important;
+        display: inline-block !important;
+        vertical-align: middle !important; 
+        height: 11px !important;
         width: auto !important;
+        margin-left: 6px !important; 
         flex-shrink: 0 !important;
-        margin: 0 !important;
     }
 }
