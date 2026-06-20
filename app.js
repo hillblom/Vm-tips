@@ -97,7 +97,7 @@ function calculatePointsAdvanced(match, predictionStr) {
 
 function getUserStatsAtMatchLimit(user, limit = null) {
     let totalPoints = 0, p12 = 0, p0 = 0;
-    const userPredictions = allPredictions[user] || {};
+    const userPredictions = (user === "Kollektivet") ? getCollectivePredictions() : (allPredictions[user] || {});
     const finished = allMatches.filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED").sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
     const toCount = limit !== null ? finished.slice(0, limit) : finished;
 
@@ -105,7 +105,10 @@ function getUserStatsAtMatchLimit(user, limit = null) {
         const key = getMatchKey(match);
         const prediction = getPredictionFromKey(userPredictions, key);
         if (prediction !== "-") {
-            const pts = calculatePointsAdvanced(match, prediction);
+            const originalUser = currentUser;
+            if (user === "Kollektivet") currentUser = "Kollektivet";
+                const pts = calculatePointsAdvanced(match, prediction);
+            if (user === "Kollektivet") currentUser = originalUser;
             totalPoints += pts;
             if (pts === 12) p12++;
             if (pts === 0) p0++;
@@ -158,7 +161,7 @@ function renderMatches() {
             <td>${homeScore}-${awayScore}</td>
             <td>${prediction}</td>
             <td>${points}</td>
-            <td>${match.status === "FINISHED" ? "Fulltid" : (match.status === "IN_PLAY" || match.status === "PAUSED" || match.status === "LIVE" ? "Pågår" : "Kommande")}</td>
+            <td>${match.status === "FINISHED" ? "Slut" : (match.status === "IN_PLAY" || match.status === "PAUSED" || match.status === "LIVE" ? "Pågår" : "Kommande")}</td>
         `;
         tbody.appendChild(row);
     });
@@ -176,6 +179,15 @@ function renderRanking() {
     let ranking = users.map(user => {
         const stats = getUserStatsAtMatchLimit(user);
         return { name: user, total: stats.totalPoints, p12: stats.p12, p0: stats.p0 };
+    });
+
+    const collectiveStats = getUserStatsAtMatchLimit("Kollektivet");
+    ranking.push({
+        name: "🤖 Kollektivet",
+        total: collectiveStats.totalPoints,
+        p12: collectiveStats.p12,
+        p0: collectiveStats.p0,
+        isBot: true // Flagga för att kunna styla raden annorlunda
     });
 
     ranking.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -231,17 +243,19 @@ function renderRanking() {
     // --- NYTT: SÄTT TEXT FÖR RAKET OCH FRITT FALL ---
     document.getElementById("stats-max-climb").innerText = maxClimb > 0 ? `${raketName} (+${maxClimb})` : "Ingen förändring";
     document.getElementById("stats-max-drop").innerText = maxDrop < 0 ? `${fallName} (${maxDrop})` : "Ingen förändring";
+    let displayPos = 1;
 
+    const orderedPointsTable = ranking.filter(x => !x.isBot).map(x => x.total);
 
-    // Rendera själva tabellraderna till vänster (Befintlig logik)
     ranking.forEach((player, i) => {
         const row = document.createElement("tr");
         if (player.name === currentUser) row.classList.add("highlight-user-row");
+        if (player.isBot) row.style.backgroundColor = "rgba(0, 123, 255, 0.15)";
         
         let trendHtml = "";
         const userDiff = trendMap[player.name] || 0;
 
-        if (finishedMatches.length > 0 && userDiff !== 0) {
+        if (finishedMatches.length > 0 && userDiff !== 0 && !player.isBot) {
             if (userDiff > 0 && userDiff === maxClimb) {
                 trendHtml = `<span class="trend-icon trend-green" title="Klättrat mest: +${userDiff} platser">▲</span>`;
             } else if (userDiff < 0 && Math.abs(userDiff) === Math.abs(maxDrop)) {
@@ -249,8 +263,13 @@ function renderRanking() {
             }
         }
 
+        // NY LOGIK FÖR PLACERING:
+        // Om det är boten (Kollektivet) får den "-", annars slår vi upp poängen i orderedPointsTable
+        // indexOf ger 0 för första platsen, så vi lägger till 1.
+        const posCell = player.isBot ? "-" : (orderedPointsTable.indexOf(player.total) + 1);
+
         row.innerHTML = `
-            <td>${i + 1} ${trendHtml}</td>
+            <td>${posCell} ${trendHtml}</td>
             <td><strong>${player.name}</strong></td>
             <td>${player.total}</td>
             <td style="text-align:center">${player.p12}</td>
@@ -314,17 +333,25 @@ function renderMatrix() {
         return { name: user, totalPoints: getUserStatsAtMatchLimit(user).totalPoints };
     });
 
+    const collectiveTotal = getUserStatsAtMatchLimit("Kollektivet").totalPoints;
+    rankingScores.push({ name: "🤖 Kollektivet", totalPoints: collectiveTotal, isBot: true });
+
     // 2. Sortera ALLTID efter ranking först för att räkna ut den fasta placeringen (inklusive delad plats)
     rankingScores.sort((a, b) => b.totalPoints - a.totalPoints || a.name.localeCompare(b.name));
     
-    const orderedPoints = rankingScores.map(x => x.totalPoints);
+    // Filtrera bort boten när vi skapar listan över poäng som avgör de riktiga placeringarna
+    const orderedPoints = rankingScores.filter(x => !x.isBot).map(x => x.totalPoints);
     
     // Spara ranking-positionen som en egenskap på varje deltagare
     rankingScores.forEach((player, i) => {
-        player.rankingPos = orderedPoints.indexOf(player.totalPoints) + 1;
+        if (player.isBot) {
+            player.rankingPos = "-"; // Ingen placering för Kollektivet
+        } else {
+            player.rankingPos = orderedPoints.indexOf(player.totalPoints) + 1;
+        }
     });
 
-    // 3. Om användaren har valt bokstavsordning, sorterar vi om listan NU (men behåller .rankingPos intakt!)
+    // 3. Om användaren har valt bokstavsordning, sorterar vi om listan NU
     if (!matrixSortByRanking) {
         rankingScores.sort((a, b) => a.name.localeCompare(b.name));
     }
@@ -334,15 +361,17 @@ function renderMatrix() {
         const user = player.name;
         const row = document.createElement("tr");
         if (user === currentUser) row.classList.add("highlight-user-row");
+        if (player.isBot) row.style.backgroundColor = "rgba(0, 123, 255, 0.15)";
         
-        const displayPos = player.rankingPos;
+        const displayPos = player.rankingPos; // Kommer nu att vara "-" för kollektivet
 
         let html = `<td class="matrix-sticky-pos">${displayPos}</td><td class="matrix-sticky-name"><strong>${user}</strong></td>`;
+        const currentPredictionsSource = player.isBot ? getCollectivePredictions() : (allPredictions[user] || {});
         
         // Loopen använder nu den dynamiskt filtrerade "matches"-arrayen så kolumnmängden matchar exakt
         matches.forEach(m => {
             const key = getMatchKey(m);
-            const pred = getPredictionFromKey(allPredictions[user], key);
+            const pred = getPredictionFromKey(currentPredictionsSource, key);
             
             if (m.status === "FINISHED") {
             // Spelad match = vanliga klara färger och poäng
@@ -376,7 +405,8 @@ function setupTabs() {
     const tabs = {
         "btn-matches": ["view-matches", false],
         "btn-ranking": ["view-ranking", false],
-        "btn-matrix": ["view-matrix", true]
+        "btn-matrix": ["view-matrix", true],
+        "btn-trend": ["view-trend", false] // NY FLiK FÖR TREND
     };
 
     Object.keys(tabs).forEach(btnId => {
@@ -420,6 +450,7 @@ function setupTabs() {
 
             if (btnId === "btn-ranking") renderRanking();
             if (btnId === "btn-matrix") renderMatrix();
+            if (btnId === "btn-trend") renderTrendChart();
         });
     });
 
@@ -469,6 +500,7 @@ async function start() {
         renderMatches();
         if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
         if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
+        if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart();
     });
 
     document.getElementById("hide-finished-checkbox").addEventListener("change", (e) => {
@@ -496,6 +528,171 @@ async function start() {
     renderMatches();
     if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
     if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
+    if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart(); // NY RAD FÖR ATT RENDERA TREND-GRAFEN DIREKT VID START
+}
+
+function renderTrendChart() {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    // 1. Hämta alla färdigspelade gruppspelsmatcher i kronologisk ordning
+    const finishedMatches = allMatches
+        .filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED")
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+    if (finishedMatches.length === 0) {
+        // Om inga matcher spelas än, rensa och visa ett meddelande i canvasen
+        if (trendChartInstance) trendChartInstance.destroy();
+        return;
+    }
+
+    // 2. Bygg upp historik per match för den valda deltagaren
+    const labels = [];
+    const positions = [];
+
+    // Loopa igenom historien match för match
+    for (let i = 1; i <= finishedMatches.length; i++) {
+        const currentMatchesAtLimit = finishedMatches.slice(0, i);
+        
+        // Räkna ut totalpoäng för alla deltagare vid just detta tillfälle (match 'i')
+        const users = Object.keys(allPredictions);
+        const snapshotRanking = users.map(user => {
+            let totalPoints = 0;
+            const userPredictions = allPredictions[user] || {};
+            
+            currentMatchesAtLimit.forEach(match => {
+                const key = getMatchKey(match);
+                const prediction = getPredictionFromKey(userPredictions, key);
+                if (prediction !== "-") {
+                    totalPoints += calculatePointsAdvanced(match, prediction);
+                }
+            });
+            return { name: user, points: totalPoints };
+        });
+
+        // Sortera för att få fram placeringen vid denna specifika match
+        snapshotRanking.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+        const orderedPoints = snapshotRanking.map(x => x.points);
+        
+        // Hitta placeringen för den aktiva användaren (1-indexerat, hanterar delad plats)
+        const userMatchData = snapshotRanking.find(x => x.name === currentUser);
+        const currentPos = userMatchData ? orderedPoints.indexOf(userMatchData.points) + 1 : null;
+
+        // Använd match-nyckeln (t.ex. "SWE-UKR") eller bara "Match X" som etikett i x-axeln
+        const lastMatch = currentMatchesAtLimit[currentMatchesAtLimit.length - 1];
+        labels.push(getMatchKey(lastMatch));
+        positions.push(currentPos);
+    }
+
+    // 3. Förstör tidigare graf-instans om den finns innan vi ritar en ny
+    if (trendChartInstance) {
+        trendChartInstance.destroy();
+    }
+
+    // 4. Skapa den nya grafen med Chart.js
+    trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '',
+                data: positions,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderWidth: 3,
+                tension: 0.2, // Gör linjen lite mjukare kurvad
+                pointRadius: 4,
+                pointBackgroundColor: '#007bff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    reverse: true, // VÄNDER AXELN: Pos 1 hamnar högst upp!
+                    min: 1,
+                    max: 33,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Placering'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Matcher'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                    position: 'top'
+                }
+            }
+        },
+
+        plugins: [{
+            id: 'customDataLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx, data } = chart;
+                ctx.save();
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#007bff'; // Samma blåa färg som linjen
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+
+                chart.getDatasetMeta(0).data.forEach((point, index) => {
+                    const value = data.datasets[0].data[index];
+                    if (value !== null && value !== undefined) {
+                        // Ritar ut placeringen precis ovanför (y - 10) varje punkt (x)
+                        ctx.fillText(value, point.x, point.y - 10);
+                    }
+                });
+                ctx.restore();
+            }
+        }]
+    });
+}
+
+function getCollectivePredictions() {
+    const collectivePreds = {};
+    const users = Object.keys(allPredictions);
+    if (users.length === 0) return collectivePreds;
+
+    allMatches.filter(m => m.stage === "GROUP_STAGE").forEach(match => {
+        const key = getMatchKey(match);
+        let totalHomeScore = 0;
+        let totalAwayScore = 0;
+        let count = 0;
+
+        users.forEach(user => {
+            const pred = getPredictionFromKey(allPredictions[user], key);
+            if (pred !== "-") {
+                const [h, a] = pred.split("-").map(Number);
+                if (!isNaN(h) && !isNaN(a)) {
+                    totalHomeScore += h;
+                    totalAwayScore += a;
+                    count++;
+                }
+            }
+        });
+
+        if (count > 0) {
+            const avgHome = Math.round(totalHomeScore / count);
+            const avgAway = Math.round(totalAwayScore / count);
+            collectivePreds[key] = `${avgHome}-${avgAway}`;
+        } else {
+            collectivePreds[key] = "-";
+        }
+    });
+
+    return collectivePreds;
 }
 
 function toggleMatrixSort() {

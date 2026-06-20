@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=550, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="viewport" content="width=550, initial-scale=0.5, shrink-to-fit=yes">
     <title>VM-Tips 2026</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,13 +14,15 @@
             <div id="last-updated" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;"></div>
         </div>
 
-        <div id="lastUpdated" style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;"></div>
+        <div id="lastUpdated" style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">
+        </div>
 
         <div class="main-tabs">
             <button id="btn-matches" class="tab-btn active">Matcher</button>
             <button id="btn-ranking" class="tab-btn">Tabell</button>
+            <button id="btn-trend" class="tab-btn">Historik</button>
             <button id="btn-matrix" class="tab-btn">Matris</button>
-            <button id="btn-rules" class="tab-btn info-btn">i</button>
+            <button id="btn-rules" class="tab-btn info-btn">i</button>            
         </div>
 
         <div class="user-selector-container">
@@ -53,52 +55,58 @@
             </table>
         </div>
 
-<div id="view-ranking" class="tab-content hidden">
-    <div class="ranking-layout-container">
-        
-        <div class="ranking-main-table">
-            <table class="ranking-table">
-                <thead>
-                    <tr>
-                        <th style="width: 55px;">Pos</th>
-                        <th>Namn</th>
-                        <th>Totalt</th>
-                        <th style="width: 100px; text-align: center;">Antal 12p</th>
-                        <th style="width: 100px; text-align: center;">Antal 0p</th>
-                    </tr>
-                </thead>
-                <tbody id="ranking-list"></tbody>
-            </table>
-        </div>
+        <div id="view-ranking" class="tab-content hidden">
+            <div class="ranking-layout-container">
+                
+                <div class="ranking-main-table">
+                    <table class="ranking-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 55px;">Pos</th>
+                                <th>Namn</th>
+                                <th>Totalt</th>
+                                <th style="width: 100px; text-align: center;">Antal 12p</th>
+                                <th style="width: 100px; text-align: center;">Antal 0p</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranking-list"></tbody>
+                    </table>
+                    <div class="bot-explanation-card">
+                <h4>🤖 Vad är Kollektivet?</h4>
+                <p>
+                    Kollektivet är en fiktiv deltagare vars tipsrad är det exakta **medelvärdet** av vad alla 33 deltagare i gruppen har tippat (avrundat till närmaste heltal). 
+                </p>
+                </div>  
+                </div>
 
-        <div class="ranking-side-panel">
-            <div class="side-panel-section match-info-grid">
-                <div class="info-box">
-                    <span class="info-label">Omgång</span>
-                    <span class="info-value" id="stats-played-rounds">-</span>
+                <div class="ranking-side-panel">
+                    <div class="side-panel-section match-info-grid">
+                        <div class="info-box">
+                            <span class="info-label">Omgång</span>
+                            <span class="info-value" id="stats-played-rounds">-</span>
+                        </div>
+                        <div class="info-box">
+                            <span class="info-label">Matcher kvar</span>
+                            <span class="info-value" id="stats-matches-left">-</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="panel-divider">
+
+                    <div class="side-panel-section trends-section">
+                        <div class="trend-card climb">
+                            <h4>Raketen sedan förra matchen:</h4>
+                            <p id="stats-max-climb">Ingen data än</p>
+                        </div>
+                        <div class="trend-card drop">
+                            <h4>Fritt fall sedan förra matchen:</h4>
+                            <p id="stats-max-drop">Ingen data än</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="info-box">
-                    <span class="info-label">Matcher kvar</span>
-                    <span class="info-value" id="stats-matches-left">-</span>
-                </div>
+
             </div>
-            
-            <hr class="panel-divider">
-
-            <div class="side-panel-section trends-section">
-                <div class="trend-card climb">
-                    <h4>Raketen sedan förra matchen:</h4>
-                    <p id="stats-max-climb">Ingen data än</p>
-                </div>
-                <div class="trend-card drop">
-                    <h4>Fritt fall sedan förra matchen:</h4>
-                    <p id="stats-max-drop">Ingen data än</p>
-                </div>
-            </div>
         </div>
-
-    </div>
-</div>
 
         <div id="view-matrix" class="tab-content hidden">
             <div class="matrix-wrapper">
@@ -111,7 +119,12 @@
             </div>
         </div>
 
-        
+        <div id="view-trend" class="tab-content hidden">
+            <div class="card" style="padding: 20px; min-height: 350px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
     </div>
 
     <div id="rules-modal" class="modal hidden">
@@ -128,6 +141,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

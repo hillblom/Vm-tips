@@ -618,7 +618,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 /* ==========================================================================
    2. MOBILBLOCK (Måste ligga absolut längst ner i filen för att gälla!)
    ========================================================================== */
-@media (max-width: 480px) {
+@media (max-width: 410px) {
     /* Tvinga tunna rader i matchtabellen */
     #view-matches td {
         padding: 6px 8px !important;
@@ -692,4 +692,35 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
         margin-left: 6px !important; 
         flex-shrink: 0 !important;
     }
+}
+
+/* --- TRENDFLIK (GRAF) --- */
+#view-trend canvas {
+    width: 100% !important;
+    max-height: 450px;
+}
+
+.bot-explanation-card {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.bot-explanation-card h4 {
+    color: #0056b3;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+}
+
+.bot-explanation-card p {
+    color: #495057;
+    margin-bottom: 6px;
+}
+
+.bot-explanation-card p:last-child {
+    margin-bottom: 0;
 }
