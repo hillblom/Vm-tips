@@ -187,14 +187,11 @@ function renderRanking() {
         total: collectiveStats.totalPoints,
         p12: collectiveStats.p12,
         p0: collectiveStats.p0,
-        isBot: true // Flagga för att kunna styla raden annorlunda
+        isBot: true 
     });
 
     ranking.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
-    // --- NYTT: UPPDATERA INFOPANELEN (Matcher kvar & Omgångar) ---
-    // Räkna ut ett ungefärligt omgångsnummer (t.ex. antal spelade matcher dividerat med hur många matcher det är per omgång, eller bara antal spelade matcher)
-    // Här sätter vi antal spelade gruppspelsmatcher som en indikator, eller ändra till din egen logik:
     const playedCount = finishedMatches.length;
     const totalCount = allGroupMatches.length;
     const leftCount = totalCount - playedCount;
@@ -202,20 +199,19 @@ function renderRanking() {
     document.getElementById("stats-played-rounds").innerText = playedCount;
     document.getElementById("stats-matches-left").innerText = leftCount;
 
-
-    // Trend-logik (Befintlig)
     const trendMap = {};
     let maxClimb = 0; 
     let maxDrop = 0;  
-    let raketName = "Ingen";
-    let fallName = "Ingen";
+    
+    // NYTT: Arrayer för att spara ALLA som delar på förstaplatsen i trenderna
+    let raketNames = [];
+    let fallNames = [];
 
     if (finishedMatches.length > 0) {
         const currentRanks = {};
         ranking.forEach((player, idx) => { currentRanks[player.name] = idx + 1; });
 
-        // Titta 3 matcher bakåt för trenden (precis som i din tidigare kod)
-        const limit = Math.max(0, finishedMatches.length - 1); // Ändrat till -1 för att se förändringen sedan EXAKT förra matchen
+        const limit = Math.max(0, finishedMatches.length - 1); 
         const oldScores = users.map(u => ({ name: u, pts: getUserStatsAtMatchLimit(u, limit).totalPoints }));
         oldScores.sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
         
@@ -225,26 +221,43 @@ function renderRanking() {
         users.forEach(user => {
             const current = currentRanks[user];
             const old = oldRanks[user];
-            const diff = old - current; // Positivt = klättrat platser
+            const diff = old - current; 
 
             trendMap[user] = diff;
 
+            // Räkna ut högsta klättring
             if (diff > maxClimb) {
                 maxClimb = diff;
-                raketName = user;
+                raketNames = [user]; // Nytt rekord, nollställ arrayen med detta namn
+            } else if (diff === maxClimb && diff > 0) {
+                raketNames.push(user); // Delat rekord, lägg till i listan
             }
+
+            // Räkna ut största fall
             if (diff < maxDrop) {
                 maxDrop = diff;
-                fallName = user;
+                fallNames = [user]; // Nytt bottenrekord, nollställ arrayen
+            } else if (diff === maxDrop && diff < 0) {
+                fallNames.push(user); // Delat bottenrekord, lägg till i listan
             }
         });
     }
 
-    // --- NYTT: SÄTT TEXT FÖR RAKET OCH FRITT FALL ---
-    document.getElementById("stats-max-climb").innerText = maxClimb > 0 ? `${raketName} (+${maxClimb})` : "Ingen förändring";
-    document.getElementById("stats-max-drop").innerText = maxDrop < 0 ? `${fallName} (${maxDrop})` : "Ingen förändring";
-    let displayPos = 1;
+    // --- NYTT: SKRIV UT ALLA NAMN SEPARERADE MED KOMMATECKEN ---
+    if (maxClimb > 0) {
+        // .join("<br>") lägger varje namn på en ny rad, och poängen hamnar på sista raden
+        document.getElementById("stats-max-climb").innerHTML = `${raketNames.join("<br>")} <span style="font-weight: bold; color: var(--success, #28a745); display: block; margin-top: 4px;">(+${maxClimb})</span>`;
+    } else {
+        document.getElementById("stats-max-climb").innerHTML = "Ingen förändring";
+    }
 
+    if (maxDrop < 0) {
+        document.getElementById("stats-max-drop").innerHTML = `${fallNames.join("<br>")} <span style="font-weight: bold; color: var(--danger, #dc3545); display: block; margin-top: 4px;">(${maxDrop})</span>`;
+    } else {
+        document.getElementById("stats-max-drop").innerHTML = "Ingen förändring";
+    }
+
+    let displayPos = 1;
     const orderedPointsTable = ranking.filter(x => !x.isBot).map(x => x.total);
 
     ranking.forEach((player, i) => {
@@ -263,9 +276,6 @@ function renderRanking() {
             }
         }
 
-        // NY LOGIK FÖR PLACERING:
-        // Om det är boten (Kollektivet) får den "-", annars slår vi upp poängen i orderedPointsTable
-        // indexOf ger 0 för första platsen, så vi lägger till 1.
         const posCell = player.isBot ? "-" : (orderedPointsTable.indexOf(player.total) + 1);
 
         row.innerHTML = `
@@ -458,6 +468,31 @@ function setupTabs() {
     document.querySelector(".close-btn").addEventListener("click", () => document.getElementById("rules-modal").classList.add("hidden"));
 }
 
+async function updateApiData() {
+    try {
+        // Hämta färsk matchdata med en timestamp för att förhindra cache
+        const respM = await fetch(API_URL + "?t=" + Date.now());
+        const data = await respM.json();
+        allMatches = data.matches;
+
+        // Uppdatera klockslaget för senaste uppdateringen
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const updatedEl = document.getElementById("last-updated");
+        if (updatedEl) {
+            updatedEl.innerText = `Uppdaterad: ${timeStr}`;
+        } 
+
+        // Rendera om den flik som för tillfället är synlig
+        renderMatches();
+        if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
+        if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
+        if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart();
+    } catch (error) {
+        console.error("Kunde inte hämta live-data från API:", error);
+    }
+}
+
 async function start() {
     setupTabs();
     
@@ -465,23 +500,18 @@ async function start() {
     allPredictions = await respP.json();
     
     const selector = document.getElementById("user-selector");
-
     const userModal = document.getElementById("user-tips-modal");
     const closeUserBtn = document.querySelector(".close-user-modal-btn");
 
     if (closeUserBtn && userModal) {
-    // Stäng via krysset
-    closeUserBtn.addEventListener("click", () => userModal.classList.add("hidden"));
-    
-    // Stäng om man klickar utanför rutan
-    window.addEventListener("click", (e) => {
-        if (e.target === userModal) {
-            userModal.classList.add("hidden");
-        }
-    });
-}
+        closeUserBtn.addEventListener("click", () => userModal.classList.add("hidden"));
+        window.addEventListener("click", (e) => {
+            if (e.target === userModal) {
+                userModal.classList.add("hidden");
+            }
+        });
+    }
 
-    // Vi sorterar nycklarna alfabetiskt med hänsyn till svenska tecken (Å, Ä, Ö) innan loopen körs
     Object.keys(allPredictions)
     .sort((a, b) => a.localeCompare(b, 'sv'))
     .forEach(u => {
@@ -506,29 +536,17 @@ async function start() {
     document.getElementById("hide-finished-checkbox").addEventListener("change", (e) => {
         hideFinishedMatches = e.target.checked;
         renderMatches();
-
         const matrixView = document.getElementById("view-matrix");
-    if (matrixView && !matrixView.classList.contains("hidden")) {
-        renderMatrix();
-    }
+        if (matrixView && !matrixView.classList.contains("hidden")) {
+            renderMatrix();
+        }
     });
 
-    const respM = await fetch(API_URL + "?t=" + Date.now());
-    const data = await respM.json();
-    allMatches = data.matches;
+    // Kör första hämtningen direkt vid start
+    await updateApiData();
 
-   const now = new Date();
-    const timeStr = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const updatedEl = document.getElementById("last-updated");
-    if (updatedEl) {
-        updatedEl.innerText = `Uppdaterad: ${timeStr}`;
-    } 
-    
-    // RENDERAR ALLT PÅ REKTIGT NÄR API-SVARET HAR LANDAT:
-    renderMatches();
-    if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
-    if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
-    if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart(); // NY RAD FÖR ATT RENDERA TREND-GRAFEN DIREKT VID START
+    // Starta timern som körs var 30:e sekund framöver
+    setInterval(updateApiData, 30000);
 }
 
 function renderTrendChart() {

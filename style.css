@@ -190,8 +190,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     vertical-align: middle;
 }
 
-
-
 .highlight-user-row td {
     border-top: 2px solid #212529 !important;    /* Övre ramen (mörkgrå/svart) */
     border-bottom: 2px solid #212529 !important; /* Undre ramen */
@@ -226,7 +224,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 .trend-red { color: var(--danger-color); }
 .trend-dash { color: var(--text-muted); font-size: 0.8rem; }
 
-/* --- MATRISFLIKEN (ÅTERSTÄLLD TILL DITT ORIGINAL) --- */
+/* --- MATRISFLIKEN --- */
 .matrix-wrapper {
     width: 100%;
     overflow-x: auto;
@@ -282,16 +280,16 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     position: sticky;
     left: 0;
     top: 0;
-    z-index: 15; /* Högre z-index så den ligger överst i hörnet */
-    background-color: #f8f9fa; /* Matchar tabellens th-bakgrund */
+    z-index: 15;
+    background-color: #f8f9fa;
 }
 
 /* Låser fast "Deltagare ↕️"-rubriken uppe till vänster */
 .matrix-table th.matrix-sticky-name {
     position: sticky;
-    left: 35px; /* Samma left som td.matrix-sticky-name */
+    left: 35px;
     top: 0;
-    z-index: 15; /* Högre z-index */
+    z-index: 15;
     background-color: #f8f9fa;
     text-align: left !important;
 }
@@ -328,52 +326,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     font-size: 0.75rem;
     font-weight: normal;
     font-style: italic;
-}
-
-/* Tooltip container */
-.matrix-tooltip-cell {
-    position: relative;
-    cursor: pointer;
-}
-
-/* Tooltip box */
-.matrix-tooltip-cell .matrix-tooltip-box {
-    visibility: hidden;
-    width: 30px;
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    border-radius: 4px;
-    padding: 6px;
-    position: absolute;
-    z-index: 99;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    transition: opacity 0.15s;
-    font-size: 0.75rem;
-    font-weight: normal;
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-/* Tooltip pil */
-.matrix-tooltip-cell .matrix-tooltip-box::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #333 transparent transparent transparent;
-}
-
-/* Visa vid hovring */
-.matrix-tooltip-cell:hover .matrix-tooltip-box {
-    visibility: visible;
-    opacity: 1;
 }
 
 /* --- MODAL --- */
@@ -550,21 +502,17 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 #view-matches tbody tr {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important; /* Matchar din tabells linjefärg */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Säkerställ att tabellen tillåter kantlinjer på rader */
 #view-matches {
     border-collapse: collapse !important;
 }
 
-/* --- FIX FÖR DESKTOP: LÄGG TILL DETTA UTANFÖR DIN @MEDIA-REGEL --- */
-
 /* ==========================================================================
-   1. DESKTOP-REGLER (Ligger först så att mobilen kan köra över dem sen)
+   1. DESKTOP-REGLER
    ========================================================================== */
 
-/* Gör så att datum/tid och logga ligger på samma rad på datorn */
 #view-matches td.match-meta-cell {
     display: flex;
     flex-direction: row;
@@ -580,14 +528,12 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     text-align: center !important;
 }
 
-/* Gör så att datum och tid ligger på en och samma rad på datorn */
 #view-matches .date-time-stack {
     display: flex;
     flex-direction: row;
     gap: 5px; 
 }
 
-/* Centrera logga och klocka i headern */
 .header, #header-container, .app-header {
     display: flex !important;
     flex-direction: column !important;
@@ -596,7 +542,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     width: 100% !important;
 }
 
-/* Centrera flikarna (Matcher, Tabell, Matris) */
 .nav-tabs, .tab-container, .tabs {
     display: flex !important;
     justify-content: center !important; 
@@ -604,7 +549,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     border-bottom: 1px solid #dee2e6; 
 }
 
-/* Centrera Deltagare-dropdownen och kryssrutan */
 .filter-container, .user-selector-zone {
     display: flex !important;
     justify-content: center !important; 
@@ -612,86 +556,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     gap: 15px !important;
     width: 100% !important;
     margin: 10px 0 !important;
-}
-
-
-/* ==========================================================================
-   2. MOBILBLOCK (Måste ligga absolut längst ner i filen för att gälla!)
-   ========================================================================== */
-@media (max-width: 410px) {
-    /* Tvinga tunna rader i matchtabellen */
-    #view-matches td {
-        padding: 6px 8px !important;
-        vertical-align: middle !important;
-    }
-
-    #view-matches {
-        width: 100% !important;
-        overflow-x: auto !important; 
-        -webkit-overflow-scrolling: touch; 
-    }
-
-    #view-matches table {
-        width: 100% !important;
-        max-width: 100% !important; 
-        min-width: unset !important; 
-        table-layout: auto !important; 
-        border-collapse: collapse !important;
-    }
-
-    /* Generell stil för tabellceller */
-    #view-matches th, 
-    #view-matches td {
-        white-space: nowrap; 
-        padding: 3px 3px !important;   
-    }
-    
-    /* 1. Datum/tid-cellen som en vanlig stabil tabellcell på mobilen */
-    #view-matches td.match-meta-cell {
-        display: table-cell !important;    
-        vertical-align: middle !important; 
-        min-width: 80px !important;
-        white-space: nowrap !important;
-        border-bottom: none !important;
-        padding-left: 6px !important;
-    }
-
-    /* 2. Nu med full tyngd (#view-matches) för att utplåna desktop-regeln! */
-    #view-matches .date-time-stack {
-        display: inline-flex !important;   
-        flex-direction: column !important; /* TVINGAR nu ner klockslaget under datumet */
-        justify-content: center !important;
-        vertical-align: middle !important; 
-        text-align: left !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    #view-matches .match-d {
-        display: block !important;
-        white-space: nowrap !important;
-        font-size: 0.7rem !important;
-        font-weight: 500;
-        line-height: 1.1 !important;
-    }
-
-    #view-matches .match-t {
-        display: block !important;
-        white-space: nowrap !important; 
-        font-size: 0.65rem !important;
-        color: var(--text-muted) !important;
-        line-height: 1.1 !important;
-    }
-
-    /* 3. TV-logotypen centrerar i höjdled mot texten */
-    #view-matches .tv-logo {
-        display: inline-block !important;
-        vertical-align: middle !important; 
-        height: 11px !important;
-        width: auto !important;
-        margin-left: 6px !important; 
-        flex-shrink: 0 !important;
-    }
 }
 
 /* --- TRENDFLIK (GRAF) --- */
@@ -723,4 +587,144 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 
 .bot-explanation-card p:last-child {
     margin-bottom: 0;
+}
+
+/* ==========================================================================
+   2. MATRIS TOOLTIP (RENSAD OCH FUNGERANDE)
+   ========================================================================== */
+
+.matrix-table th.matrix-tooltip-cell, 
+.matrix-table td.matrix-tooltip-cell {
+    position: relative !important;
+    cursor: pointer !important;
+}
+
+/* Själva tooltip-boxen */
+.matrix-tooltip-cell .matrix-tooltip-box {
+    visibility: hidden !important;
+    position: absolute !important;
+    
+    /* Tvingar den att ligga ovanför allt, även utanför scroll-wrappers */
+    z-index: 99991 !important; 
+    
+    /* Placerar boxen centrerat ovanför cellen */
+    bottom: 100% !important;
+    left: 50% !important;
+    transform: translate(-50%, -4px) !important; /* Flyttar upp 4px från kanten */
+    
+    /* Styling */
+    width: auto !important;
+    background-color: rgba(33, 37, 41, 0.98) !important;
+    color: #fff !important;
+    text-align: center !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-size: 0.75rem !important;
+    font-weight: normal !important;
+    white-space: nowrap !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    pointer-events: none !important;
+    
+    /* Toning */
+    opacity: 0 !important;
+    transition: opacity 0.15s ease-in-out !important;
+}
+
+/* Liten pil i botten */
+.matrix-tooltip-cell .matrix-tooltip-box::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 50% !important;
+    margin-left: -5px !important;
+    border-width: 5px !important;
+    border-style: solid !important;
+    border-color: rgba(33, 37, 41, 0.98) transparent transparent transparent !important;
+}
+
+/* VISA VID HOVER */
+.matrix-tooltip-cell:hover .matrix-tooltip-box {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* VIKTIGT: Förhindra att `.matrix-wrapper` klipper av tooltipen i höjdled */
+.matrix-wrapper {
+    overflow-x: auto !important;
+    overflow-y: visible !important; /* Låter tooltipen sticka upp i toppkanten */
+    padding-top: 30px !important;    /* Ger lite extra luft i toppen så rutan får plats */
+}
+
+/* ==========================================================================
+   3. MOBILBLOCK (Ligger absolut sist för att gälla över allt annat!)
+   ========================================================================== */
+@media (max-width: 410px) {
+    #view-matches td {
+        padding: 6px 8px !important;
+        vertical-align: middle !important;
+    }
+
+    #view-matches {
+        width: 100% !important;
+        overflow-x: auto !important; 
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    #view-matches table {
+        width: 100% !important;
+        max-width: 100% !important; 
+        min-width: unset !important; 
+        table-layout: auto !important; 
+        border-collapse: collapse !important;
+    }
+
+    #view-matches th, 
+    #view-matches td {
+        white-space: nowrap; 
+        padding: 3px 3px !important;     
+    }
+    
+    #view-matches td.match-meta-cell {
+        display: table-cell !important;    
+        vertical-align: middle !important; 
+        min-width: 80px !important;
+        white-space: nowrap !important;
+        border-bottom: none !important;
+        padding-left: 6px !important;
+    }
+
+    #view-matches .date-time-stack {
+        display: inline-flex !important;   
+        flex-direction: column !important;
+        justify-content: center !important;
+        vertical-align: middle !important; 
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #view-matches .match-d {
+        display: block !important;
+        white-space: nowrap !important;
+        font-size: 0.7rem !important;
+        font-weight: 500;
+        line-height: 1.1 !important;
+    }
+
+    #view-matches .match-t {
+        display: block !important;
+        white-space: nowrap !important; 
+        font-size: 0.65rem !important;
+        color: var(--text-muted) !important;
+        line-height: 1.1 !important;
+    }
+
+    #view-matches .tv-logo {
+        display: inline-block !important;
+        vertical-align: middle !important; 
+        height: 11px !important;
+        width: auto !important;
+        margin-left: 6px !important; 
+        flex-shrink: 0 !important;
+    }
 }
