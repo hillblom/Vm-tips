@@ -40,6 +40,15 @@ body {
     margin-bottom: 10px;
 }
 
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
 h1 {
     font-size: 1.8rem;
     color: #333;
@@ -61,6 +70,19 @@ h1 {
     gap: 8px;
 }
 
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.select-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 select {
     padding: 6px 12px;
     border-radius: 4px;
@@ -70,8 +92,27 @@ select {
     outline: none;
 }
 
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    user-select: none;
+}
+
 /* Centrerar flikarna */
 .main-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1px;
+}
+
+/* Behåller den gamla klassen .tabs om den används någonstans */
+.tabs {
     display: flex;
     justify-content: center;
     gap: 5px;
@@ -162,12 +203,26 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     border-right: 2px solid #212529 !important;  /* Högerkanten på raden */
 }
 
+.ranking-name-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.trend-container {
+    display: inline-flex;
+    align-items: center;
+    width: 24px;
+    justify-content: center;
+}
+
 .trend-icon {
     font-size: 0.75rem;
 }
 
 .trend-green { color: var(--success-color); }
 .trend-red { color: var(--danger-color); }
+.trend-dash { color: var(--text-muted); font-size: 0.8rem; }
 
 /* --- MATRISFLIKEN --- */
 .matrix-wrapper {
@@ -315,6 +370,29 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     font-size: 1.4rem;
 }
 
+.modal-content ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+.modal-content li {
+    margin-bottom: 8px;
+}
+
+.rules-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.rules-btn:hover {
+    background-color: #5a6268;
+}
+
 /* Layout för rankingfliken */
 .ranking-layout-container {
     display: flex;
@@ -371,6 +449,20 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     border: 0;
     border-top: 1px solid var(--border-color);
     margin: 15px 0;
+}
+
+.ranking-side-panel h3 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+/* Listan för Topp 5 */
+.top-five-list {
+    padding-left: 20px;
+    font-weight: 500;
+}
+.top-five-list li {
+    margin-bottom: 4px;
 }
 
 /* Trendkorten för Raket/Fritt fall */
@@ -442,8 +534,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     gap: 5px; 
 }
 
-<<<<<<< HEAD
-=======
 .header, #header-container, .app-header {
     display: flex !important;
     flex-direction: column !important;
@@ -468,7 +558,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     margin: 10px 0 !important;
 }
 
->>>>>>> 67cd5cb95959b076a8cf9e142815106de81f00b7
 /* --- TRENDFLIK (GRAF) --- */
 #view-trend canvas {
     width: 100% !important;
