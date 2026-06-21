@@ -203,7 +203,11 @@ function renderRanking() {
     let maxClimb = 0; 
     let maxDrop = 0;  
     
+<<<<<<< HEAD
     // Arrayer för att spara alla som delar på förstaplatsen i trenderna
+=======
+    // NYTT: Arrayer för att spara ALLA som delar på förstaplatsen i trenderna
+>>>>>>> 67cd5cb95959b076a8cf9e142815106de81f00b7
     let raketNames = [];
     let fallNames = [];
 
@@ -243,13 +247,26 @@ function renderRanking() {
         });
     }
 
+<<<<<<< HEAD
     // Skriv ut alla namn separerade med radbrytning
+=======
+    // --- NYTT: SKRIV UT ALLA NAMN SEPARERADE MED KOMMATECKEN ---
+>>>>>>> 67cd5cb95959b076a8cf9e142815106de81f00b7
     if (maxClimb > 0) {
         // .join("<br>") lägger varje namn på en ny rad, och poängen hamnar på sista raden
         document.getElementById("stats-max-climb").innerHTML = `${raketNames.join("<br>")} <span style="font-weight: bold; color: var(--success, #28a745); display: block; margin-top: 4px;">(+${maxClimb})</span>`;
     } else {
         document.getElementById("stats-max-climb").innerHTML = "Ingen förändring";
     }
+<<<<<<< HEAD
+
+    if (maxDrop < 0) {
+        document.getElementById("stats-max-drop").innerHTML = `${fallNames.join("<br>")} <span style="font-weight: bold; color: var(--danger, #dc3545); display: block; margin-top: 4px;">(${maxDrop})</span>`;
+    } else {
+        document.getElementById("stats-max-drop").innerHTML = "Ingen förändring";
+    }
+=======
+>>>>>>> 67cd5cb95959b076a8cf9e142815106de81f00b7
 
     if (maxDrop < 0) {
         document.getElementById("stats-max-drop").innerHTML = `${fallNames.join("<br>")} <span style="font-weight: bold; color: var(--danger, #dc3545); display: block; margin-top: 4px;">(${maxDrop})</span>`;
@@ -257,6 +274,7 @@ function renderRanking() {
         document.getElementById("stats-max-drop").innerHTML = "Ingen förändring";
     }
 
+    let displayPos = 1;
     const orderedPointsTable = ranking.filter(x => !x.isBot).map(x => x.total);
 
     ranking.forEach((player, i) => {
@@ -488,6 +506,20 @@ async function start() {
     allPredictions = await respP.json();
     
     const selector = document.getElementById("user-selector");
+<<<<<<< HEAD
+=======
+    const userModal = document.getElementById("user-tips-modal");
+    const closeUserBtn = document.querySelector(".close-user-modal-btn");
+
+    if (closeUserBtn && userModal) {
+        closeUserBtn.addEventListener("click", () => userModal.classList.add("hidden"));
+        window.addEventListener("click", (e) => {
+            if (e.target === userModal) {
+                userModal.classList.add("hidden");
+            }
+        });
+    }
+>>>>>>> 67cd5cb95959b076a8cf9e142815106de81f00b7
 
     Object.keys(allPredictions)
     .sort((a, b) => a.localeCompare(b, 'sv'))

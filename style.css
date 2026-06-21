@@ -442,6 +442,33 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     gap: 5px; 
 }
 
+<<<<<<< HEAD
+=======
+.header, #header-container, .app-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+.nav-tabs, .tab-container, .tabs {
+    display: flex !important;
+    justify-content: center !important; 
+    width: 100% !important;
+    border-bottom: 1px solid #dee2e6; 
+}
+
+.filter-container, .user-selector-zone {
+    display: flex !important;
+    justify-content: center !important; 
+    align-items: center !important;
+    gap: 15px !important;
+    width: 100% !important;
+    margin: 10px 0 !important;
+}
+
+>>>>>>> 67cd5cb95959b076a8cf9e142815106de81f00b7
 /* --- TRENDFLIK (GRAF) --- */
 #view-trend canvas {
     width: 100% !important;
