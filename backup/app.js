@@ -203,7 +203,7 @@ function renderRanking() {
     let maxClimb = 0; 
     let maxDrop = 0;  
     
-    // Arrayer för att spara alla som delar på förstaplatsen i trenderna
+    // NYTT: Arrayer för att spara ALLA som delar på förstaplatsen i trenderna
     let raketNames = [];
     let fallNames = [];
 
@@ -243,7 +243,7 @@ function renderRanking() {
         });
     }
 
-    // Skriv ut alla namn separerade med radbrytning
+    // --- NYTT: SKRIV UT ALLA NAMN SEPARERADE MED KOMMATECKEN ---
     if (maxClimb > 0) {
         // .join("<br>") lägger varje namn på en ny rad, och poängen hamnar på sista raden
         document.getElementById("stats-max-climb").innerHTML = `${raketNames.join("<br>")} <span style="font-weight: bold; color: var(--success, #28a745); display: block; margin-top: 4px;">(+${maxClimb})</span>`;
@@ -257,6 +257,7 @@ function renderRanking() {
         document.getElementById("stats-max-drop").innerHTML = "Ingen förändring";
     }
 
+    let displayPos = 1;
     const orderedPointsTable = ranking.filter(x => !x.isBot).map(x => x.total);
 
     ranking.forEach((player, i) => {
@@ -308,7 +309,7 @@ function renderMatrix() {
     const header = document.getElementById("matrix-header");
     const tbody = document.getElementById("matrix-body");
     
-    // Filtrerar matcherna så att de färdigspelade döljs helt om "hideFinishedMatches" är true
+    // NYTT: Här filtrerar vi matcherna så att de färdigspelade döljs helt om "hideFinishedMatches" är true
     const matches = allMatches
         .filter(m => m.stage === "GROUP_STAGE")
         .filter(m => !hideFinishedMatches || m.status !== "FINISHED")
@@ -325,8 +326,8 @@ function renderMatrix() {
         } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
             // Lägger till parenteser runt liveresultatet på översta raden
             resHtml = `<div class="matrix-th-res">(${m.score.fullTime.home ?? 0}-${m.score.fullTime.away ?? 0})</div>`;
-        }
-        headerHtml += `
+        }        
+            headerHtml += `
             <th class="matrix-tooltip-cell">
                 <div class="matrix-th-match">${key}</div>
                 ${resHtml}
@@ -383,27 +384,27 @@ function renderMatrix() {
             const pred = getPredictionFromKey(currentPredictionsSource, key);
             
             if (m.status === "FINISHED") {
-                // Spelad match = vanliga klara färger och poäng
-                const pts = calculatePointsAdvanced(m, pred);
-                let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
-                html += `<td class="${cls} matrix-tooltip-cell">
+            // Spelad match = vanliga klara färger och poäng
+            const pts = calculatePointsAdvanced(m, pred);
+            let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
+            html += `<td class="${cls} matrix-tooltip-cell">
                         <div class="matrix-cell-pts">${pts}</div>
                         <span class="matrix-tooltip-box">${pred}</span>
                     </td>`;
-            } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
-                // Pågående match = räkna ut poäng, behåll färgkodning men lägg poängen inom parentes (och kursivt)
-                const pts = calculatePointsAdvanced(m, pred);
-                let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
-                html += `<td class="${cls} matrix-tooltip-cell">
+        } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
+    // Pågående match = räkna ut poäng, behåll färgkodning men lägg poängen inom parentes (och kursivt)
+            const pts = calculatePointsAdvanced(m, pred);
+            let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
+            html += `<td class="${cls} matrix-tooltip-cell">
                         <div class="matrix-cell-pts text-muted"><em>(${pts})</em></div>
                         <span class="matrix-tooltip-box">${pred}</span>
                     </td>`;
-            } else {
-                // Kommande match = visa bara tipset inom parentes
-                html += `<td>
+        } else {
+            // Kommande match = visa bara tipset inom parentes
+            html += `<td>
                         <div class="matrix-cell-pts text-muted">(${pred})</div>
                     </td>`;
-            }
+        }
         });
         row.innerHTML = html;
         tbody.appendChild(row);
@@ -415,7 +416,7 @@ function setupTabs() {
         "btn-matches": ["view-matches", false],
         "btn-ranking": ["view-ranking", false],
         "btn-matrix": ["view-matrix", true],
-        "btn-trend": ["view-trend", false]
+        "btn-trend": ["view-trend", false] // NY FLiK FÖR TREND
     };
 
     Object.keys(tabs).forEach(btnId => {
@@ -439,12 +440,23 @@ function setupTabs() {
                 fullWidth ? container.classList.add("full-width") : container.classList.remove("full-width");
             }
 
-            // Dölj filterkryssrutan i tabellfliken, visa den i matcher/matris
+            // --- HÄR ÄR ÄNDRINGEN FÖR ATT DÖLJA/VISA FILTER-KNAPPEN ---
+            // Vi letar efter checkboxen. Om din checkbox ligger i en container (t.ex. en label eller div), 
+            // kan du byta ut "hide-finished-checkbox" mot det ID:t istället.
             const filterElement = document.getElementById("hide-finished-checkbox");
+            
+            // Om du har en tillhörande text/label till knappen som du vill dölja, 
+            // döljer vi oftast dess förälder (parent) för att få med allt:
             const filterContainer = filterElement ? filterElement.parentElement : null;
+            
             if (filterContainer) {
-                filterContainer.style.display = (btnId === "btn-ranking") ? "none" : "block";
+                if (btnId === "btn-ranking") {
+                    filterContainer.style.display = "none";  // Dölj i tabellfliken
+                } else {
+                    filterContainer.style.display = "block"; // Visa i matcher och matris
+                }
             }
+            // --------------------------------------------------------
 
             if (btnId === "btn-ranking") renderRanking();
             if (btnId === "btn-matrix") renderMatrix();
@@ -488,6 +500,17 @@ async function start() {
     allPredictions = await respP.json();
     
     const selector = document.getElementById("user-selector");
+    const userModal = document.getElementById("user-tips-modal");
+    const closeUserBtn = document.querySelector(".close-user-modal-btn");
+
+    if (closeUserBtn && userModal) {
+        closeUserBtn.addEventListener("click", () => userModal.classList.add("hidden"));
+        window.addEventListener("click", (e) => {
+            if (e.target === userModal) {
+                userModal.classList.add("hidden");
+            }
+        });
+    }
 
     Object.keys(allPredictions)
     .sort((a, b) => a.localeCompare(b, 'sv'))
