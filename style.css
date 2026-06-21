@@ -101,17 +101,8 @@ select {
     user-select: none;
 }
 
-/* Centrerar flikarna */
-.main-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1px;
-}
-
-/* Behåller den gamla klassen .tabs om den används någonstans */
+/* Flikar */
+.main-tabs,
 .tabs {
     display: flex;
     justify-content: center;
@@ -727,4 +718,16 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
         margin-left: 6px !important; 
         flex-shrink: 0 !important;
     }
+}
+
+.last-updated {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 2px 0 15px;
+}
+
+.trend-chart-card {
+    padding: 20px;
+    min-height: 350px;
 }
