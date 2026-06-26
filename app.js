@@ -6,7 +6,8 @@ const state = {
     currentUser: "",
     matrixSortByRanking: true,
     hideFinishedMatches: false,
-    trendChartInstance: null
+    trendChartInstance: null,
+    simulationResult: null
 };
 
 const dom = {};
@@ -145,6 +146,169 @@ function getUserStatsAtMatchLimit(user, limit = null) {
     return { totalPoints, p12, p0 };
 }
 
+function calculateAdvancedStats() {
+    const finishedMatches = state.allMatches
+        .filter(m => m.stage === "GROUP_STAGE" && m.status === "FINISHED")
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+        
+    const users = Object.keys(state.allPredictions);
+    
+    if (finishedMatches.length === 0 || users.length === 0) return null;
+
+    const userPositionsHistory = {};
+    const exactResultsCount = {};
+    const collectiveTwinCount = {}; // För Följa John
+    
+    users.forEach(u => {
+        userPositionsHistory[u] = [];
+        exactResultsCount[u] = 0;
+        collectiveTwinCount[u] = 0;
+    });
+
+    // Variabler för match-statistik
+    let easiestMatch = { matchStr: "", totalPoints: -1 };
+    let hardestMatch = { matchStr: "", totalPoints: 9999 };
+    let dividerMatch = { matchStr: "", spread: -1, avgPoints: 0 }; 
+    let homeWins = 0;
+    let draws = 0;
+    let awayWins = 0;
+
+    const collectivePredictions = getCollectivePredictions(); // Hämta botens tips för Följa John
+
+    // 1. Loopa match för match
+    for (let i = 1; i <= finishedMatches.length; i++) {
+        const currentMatches = finishedMatches.slice(0, i);
+        const lastMatch = finishedMatches[i - 1];
+        const matchKey = getMatchKey(lastMatch);
+        const matchName = `${teamNamesSE[lastMatch.homeTeam.name] || lastMatch.homeTeam.name} - ${teamNamesSE[lastMatch.awayTeam.name] || lastMatch.awayTeam.name}`;
+
+        // --- FLYTTAD HIT: Räkna matchutfall för hemmavinst, oavgjort, bortavinst ---
+        const homeScore = lastMatch.score.fullTime.home;
+        const awayScore = lastMatch.score.fullTime.away;
+        
+        if (homeScore > awayScore) {
+            homeWins++;
+        } else if (homeScore < awayScore) {
+            awayWins++;
+        } else {
+            draws++;
+        }
+        // ------------------------------------------------------------------------
+
+        let matchTotalPoints = 0;
+        const matchPointsArray = []; // Sparar alla individuella poäng för denna match
+
+        const snapshotRanking = users.map(user => {
+            let pts = 0;
+            const userPredictions = state.allPredictions[user] || {};
+
+            currentMatches.forEach((m, idx) => {
+                const key = getMatchKey(m);
+                const prediction = getPredictionFromKey(userPredictions, key);
+                
+                if (prediction !== "-") {
+                    const matchPoints = calculatePointsAdvanced(m, prediction, userPredictions);
+                    pts += matchPoints;
+                    
+                    // Om vi utvärderar just den match vi loopar över i huvudloopen
+                    if (idx === i - 1) {
+                        matchTotalPoints += matchPoints;
+                        matchPointsArray.push(matchPoints);
+
+                        // Följa John: Kolla om användaren tippat exakt som "Kollektivet" (snittet) på denna match
+                        const collPred = getPredictionFromKey(collectivePredictions, key);
+                        if (collPred !== "-" && prediction === collPred) {
+                            collectiveTwinCount[user]++;
+                        }
+                    }
+
+                    // Om vi är på sista varvet (totalen), räkna exakta resultat
+                    if (i === finishedMatches.length && matchPoints === 12) {
+                        exactResultsCount[user]++;
+                    }
+                }
+            });
+            return { name: user, points: pts };
+        });
+
+        // Sortera för placeringshistorik
+        snapshotRanking.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+        const orderedPoints = snapshotRanking.map(x => x.points);
+
+        users.forEach(user => {
+            const uData = snapshotRanking.find(x => x.name === user);
+            const pos = orderedPoints.indexOf(uData.points) + 1;
+            userPositionsHistory[user].push(pos);
+        });
+
+        // Beräkna Vattendelaren (Varians)
+        if (matchPointsArray.length > 0) {
+            const matchAvg = matchTotalPoints / matchPointsArray.length;
+            const variance = matchPointsArray.reduce((sum, pts) => sum + Math.pow(pts - matchAvg, 2), 0) / matchPointsArray.length;
+
+            if (variance > dividerMatch.spread) {
+                dividerMatch = { 
+                    matchStr: matchName, 
+                    spread: variance, 
+                    avgPoints: matchAvg
+                };
+            }
+        }
+
+        // Spara match-specifik statistik för lättaste/svåraste
+        if (matchTotalPoints > easiestMatch.totalPoints) {
+            easiestMatch = { matchStr: matchName, totalPoints: matchTotalPoints };
+        }
+        if (matchTotalPoints < hardestMatch.totalPoints) {
+            hardestMatch = { matchStr: matchName, totalPoints: matchTotalPoints };
+        }
+    }
+
+    // 2. Räkna ut personbunden statistik efter hela historiken
+    let jojoTarget = { name: "", movement: -1 };
+    let anchorTarget = { name: "", movement: 9999 };
+    let expertTarget = { name: "", count: -1 };
+    let johnTarget = { name: "", count: -1 };
+    let spurtTarget = { name: "", climb: -999 };
+
+    users.forEach(user => {
+        const history = userPositionsHistory[user];
+        let totalMovement = 0;
+
+        for (let j = 1; j < history.length; j++) {
+            totalMovement += Math.abs(history[j] - history[j - 1]);
+        }
+
+        if (totalMovement > jojoTarget.movement) jojoTarget = { name: user, movement: totalMovement };
+        if (totalMovement < anchorTarget.movement) anchorTarget = { name: user, movement: totalMovement };
+        if (exactResultsCount[user] > expertTarget.count) expertTarget = { name: user, count: exactResultsCount[user] };
+        if (collectiveTwinCount[user] > johnTarget.count) johnTarget = { name: user, count: collectiveTwinCount[user] };
+
+        // Spurtaren: Jämför placering nu mot för 5 matcher sedan
+        if (history.length > 0) {
+            const currentIndex = history.length - 1;
+            const pastIndex = Math.max(0, currentIndex - 5);
+            const climb = history[pastIndex] - history[currentIndex];
+            
+            if (climb > spurtTarget.climb) {
+                spurtTarget = { name: user, climb: climb };
+            }
+        }
+    });
+
+    return {
+        jojo: jojoTarget,
+        anchor: anchorTarget,
+        expert: expertTarget,
+        john: johnTarget,
+        spurt: spurtTarget,
+        easiest: easiestMatch,
+        hardest: hardestMatch,
+        divider: dividerMatch,
+        matchOutcomes: { homeWins, draws, awayWins }
+    };
+}
+
 function renderMatches() {
     const tbody = document.getElementById("matches");
     if (!tbody) return;
@@ -218,6 +382,28 @@ function renderRanking() {
         isBot: true 
     });
 
+    // --- HÄR SKJUTER VI IN DEN IMAGINÄRA RADEN ---
+    if (state.simulationResult) {
+        let simulatedPoints = 0;
+        let simP12 = 0;
+        let simP0 = 0;
+        
+        finishedMatches.forEach(m => {
+            const pts = calculatePointsAdvanced(m, state.simulationResult);
+            simulatedPoints += pts;
+            if (pts === 12) simP12++;
+            if (pts === 0) simP0++;
+        });
+
+        ranking.push({
+            name: `🔮 Rad: ${state.simulationResult}`,
+            total: simulatedPoints,
+            p12: simP12,
+            p0: simP0,
+            isSimulation: true // Flagga för att identifiera raden vid utritning
+        });
+    }
+
     ranking.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
     const playedCount = finishedMatches.length;
@@ -231,13 +417,13 @@ function renderRanking() {
     let maxClimb = 0; 
     let maxDrop = 0;  
     
-    // NYTT: Arrayer för att spara ALLA som delar på förstaplatsen i trenderna
     let raketNames = [];
     let fallNames = [];
 
     if (finishedMatches.length > 0) {
         const currentRanks = {};
-        ranking.forEach((player, idx) => { currentRanks[player.name] = idx + 1; });
+        // Filtrera bort simuleringsraden när vi skapar "riktiga" placeringar för trender
+        ranking.filter(x => !x.isSimulation).forEach((player, idx) => { currentRanks[player.name] = idx + 1; });
 
         const limit = Math.max(0, finishedMatches.length - 1); 
         const oldScores = users.map(u => ({ name: u, pts: getUserStatsAtMatchLimit(u, limit).totalPoints }));
@@ -253,27 +439,23 @@ function renderRanking() {
 
             trendMap[user] = diff;
 
-            // Räkna ut högsta klättring
             if (diff > maxClimb) {
                 maxClimb = diff;
-                raketNames = [user]; // Nytt rekord, nollställ arrayen med detta namn
+                raketNames = [user]; 
             } else if (diff === maxClimb && diff > 0) {
-                raketNames.push(user); // Delat rekord, lägg till i listan
+                raketNames.push(user); 
             }
 
-            // Räkna ut största fall
             if (diff < maxDrop) {
                 maxDrop = diff;
-                fallNames = [user]; // Nytt bottenrekord, nollställ arrayen
+                fallNames = [user]; 
             } else if (diff === maxDrop && diff < 0) {
-                fallNames.push(user); // Delat bottenrekord, lägg till i listan
+                fallNames.push(user); 
             }
         });
     }
 
-    // --- NYTT: SKRIV UT ALLA NAMN SEPARERADE MED KOMMATECKEN ---
     if (maxClimb > 0) {
-        // .join("<br>") lägger varje namn på en ny rad, och poängen hamnar på sista raden
         document.getElementById("stats-max-climb").innerHTML = `${raketNames.join("<br>")} <span style="font-weight: bold; color: var(--success, #28a745); display: block; margin-top: 4px;">(+${maxClimb})</span>`;
     } else {
         document.getElementById("stats-max-climb").innerHTML = "Ingen förändring";
@@ -285,18 +467,21 @@ function renderRanking() {
         document.getElementById("stats-max-drop").innerHTML = "Ingen förändring";
     }
 
-    let displayPos = 1;
-    const orderedPointsTable = ranking.filter(x => !x.isBot).map(x => x.total);
+    // Filtrera bort BÅDE boten och simulatorn när vi räknar ut de fasta placeringarna (för delad plats)
+    const orderedPointsTable = ranking.filter(x => !x.isBot && !x.isSimulation).map(x => x.total);
 
     ranking.forEach((player, i) => {
         const row = document.createElement("tr");
         if (player.name === state.currentUser) row.classList.add("highlight-user-row");
         if (player.isBot) row.style.backgroundColor = "rgba(0, 123, 255, 0.15)";
         
+        // Applicera den snygga lila stilen på simuleringsraden
+        if (player.isSimulation) row.classList.add("highlight-simulation-row");
+        
         let trendHtml = "";
         const userDiff = trendMap[player.name] || 0;
 
-        if (finishedMatches.length > 0 && userDiff !== 0 && !player.isBot) {
+        if (finishedMatches.length > 0 && userDiff !== 0 && !player.isBot && !player.isSimulation) {
             if (userDiff > 0 && userDiff === maxClimb) {
                 trendHtml = `<span class="trend-icon trend-green" title="Klättrat mest: +${userDiff} platser">▲</span>`;
             } else if (userDiff < 0 && Math.abs(userDiff) === Math.abs(maxDrop)) {
@@ -304,7 +489,8 @@ function renderRanking() {
             }
         }
 
-        const posCell = player.isBot ? "-" : (orderedPointsTable.indexOf(player.total) + 1);
+        // Varken boten eller simulatorn får ett eget placeringsnummer på sidan
+        const posCell = (player.isBot || player.isSimulation) ? "-" : (orderedPointsTable.indexOf(player.total) + 1);
 
         row.innerHTML = `
             <td>${posCell} ${trendHtml}</td>
@@ -318,6 +504,12 @@ function renderRanking() {
 }
 
 function renderMatrix() {
+    // 1. SPARA SCROLL-POSITIONER (Både sidans höjdled, och wrapperns sidled/höjdled)
+    const currentWindowScrollY = window.scrollY;
+    const wrapperBefore = document.querySelector(".matrix-wrapper");
+    const currentScrollLeft = wrapperBefore ? wrapperBefore.scrollLeft : 0;
+    const currentScrollTop = wrapperBefore ? wrapperBefore.scrollTop : 0;
+
     const matrixView = document.getElementById("view-matrix");
     if (!matrixView) return;
 
@@ -337,7 +529,7 @@ function renderMatrix() {
     const header = document.getElementById("matrix-header");
     const tbody = document.getElementById("matrix-body");
     
-    // NYTT: Här filtrerar vi matcherna så att de färdigspelade döljs helt om "state.hideFinishedMatches" är true
+    // Här filtrerar vi matcherna så att de färdigspelade döljs helt om "state.hideFinishedMatches" är true
     const matches = state.allMatches
         .filter(m => m.stage === "GROUP_STAGE")
         .filter(m => !state.hideFinishedMatches || m.status !== "FINISHED")
@@ -352,7 +544,6 @@ function renderMatrix() {
         if (m.status === "FINISHED") {
             resHtml = `<div class="matrix-th-res">${m.score.fullTime.home ?? 0}-${m.score.fullTime.away ?? 0}</div>`;
         } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
-            // Lägger till parenteser runt liveresultatet på översta raden
             resHtml = `<div class="matrix-th-res">(${m.score.fullTime.home ?? 0}-${m.score.fullTime.away ?? 0})</div>`;
         }        
             headerHtml += `
@@ -401,50 +592,671 @@ function renderMatrix() {
         if (user === state.currentUser) row.classList.add("highlight-user-row");
         if (player.isBot) row.style.backgroundColor = "rgba(0, 123, 255, 0.15)";
         
-        const displayPos = player.rankingPos; // Kommer nu att vara "-" för kollektivet
+        const displayPos = player.rankingPos;
 
         let html = `<td class="matrix-sticky-pos">${displayPos}</td><td class="matrix-sticky-name"><strong>${user}</strong></td>`;
         const currentPredictionsSource = player.isBot ? getCollectivePredictions() : (state.allPredictions[user] || {});
         
-        // Loopen använder nu den dynamiskt filtrerade "matches"-arrayen så kolumnmängden matchar exakt
         matches.forEach(m => {
             const key = getMatchKey(m);
             const pred = getPredictionFromKey(currentPredictionsSource, key);
             
             if (m.status === "FINISHED") {
-            // Spelad match = vanliga klara färger och poäng
-            const pts = calculatePointsAdvanced(m, pred);
-            let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
-            html += `<td class="${cls} matrix-tooltip-cell">
-                        <div class="matrix-cell-pts">${pts}</div>
-                        <span class="matrix-tooltip-box">${pred}</span>
-                    </td>`;
-        } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
-    // Pågående match = räkna ut poäng, behåll färgkodning men lägg poängen inom parentes (och kursivt)
-            const pts = calculatePointsAdvanced(m, pred);
-            let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
-            html += `<td class="${cls} matrix-tooltip-cell">
-                        <div class="matrix-cell-pts text-muted"><em>(${pts})</em></div>
-                        <span class="matrix-tooltip-box">${pred}</span>
-                    </td>`;
-        } else {
-            // Kommande match = visa bara tipset inom parentes
-            html += `<td>
-                        <div class="matrix-cell-pts text-muted">(${pred})</div>
-                    </td>`;
-        }
+                const pts = calculatePointsAdvanced(m, pred);
+                let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
+                html += `<td class="${cls} matrix-tooltip-cell">
+                            <div class="matrix-cell-pts">${pts}</div>
+                            <span class="matrix-tooltip-box">${pred}</span>
+                        </td>`;
+            } else if (m.status === "IN_PLAY" || m.status === "LIVE") {
+                const pts = calculatePointsAdvanced(m, pred);
+                let cls = pts === 12 ? "green" : (pts === 0 ? "red" : "yellow");
+                html += `<td class="${cls} matrix-tooltip-cell">
+                            <div class="matrix-cell-pts text-muted"><em>(${pts})</em></div>
+                            <span class="matrix-tooltip-box">${pred}</span>
+                        </td>`;
+            } else {
+                html += `<td>
+                            <div class="matrix-cell-pts text-muted">(${pred})</div>
+                        </td>`;
+            }
         });
         row.innerHTML = html;
         tbody.appendChild(row);
     });
+
+    // 5. ÅTERSTÄLL SCROLLEN DIREKT EFTER RENDERING
+    const wrapperAfter = document.querySelector(".matrix-wrapper");
+    if (wrapperAfter) {
+        wrapperAfter.scrollLeft = currentScrollLeft;
+        wrapperAfter.scrollTop = currentScrollTop; // Återställer höjden inuti containern (om den har max-höjd)
+    }
+    window.scrollTo(window.scrollX, currentWindowScrollY); // Återställer höjden för hela webbläsarfönstret
 }
+
+function renderStats() {
+    const container = document.getElementById("stats-container");
+    if (!container) return;
+
+    const advanced = calculateAdvancedStats();
+    
+    if (!advanced) {
+        container.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align: center; padding: 20px;">Ingen statistik tillgänglig förrän matcher har spelats färdigt.</div>`;
+        return;
+    }
+
+    // Räkna ut snittpoäng per deltagare på matcherna för lätt/svår text
+    const totalUsers = Object.keys(state.allPredictions).length;
+    const easiestAvg = (advanced.easiest.totalPoints / totalUsers).toFixed(1);
+    const hardestAvg = (advanced.hardest.totalPoints / totalUsers).toFixed(1);
+
+    container.innerHTML = `
+        <div class="stats-card accent-danger">
+            <div>
+                <h3>🎢 Placerings-jojo</h3>
+                <div class="stats-main">${advanced.jojo.name}</div>
+            </div>
+            <p class="stats-sub">Har pendlat mest upp och ner. Totalt <strong>${advanced.jojo.movement}</strong> steg i placeringsförändringar.</p>
+        </div>
+
+        <div class="stats-card accent-green">
+            <div>
+                <h3>⚓ Placeringsankare</h3>
+                <div class="stats-main">${advanced.anchor.name}</div>
+            </div>
+            <p class="stats-sub">Stabil som en klippa. Minst rörelse i tabellen med bara <strong>${advanced.anchor.movement}</strong> placeringsbyten.</p>
+        </div>
+
+        <div class="stats-card accent-blue">
+            <div>
+                <h3>🔮 Experten</h3>
+                <div class="stats-main">${advanced.expert.name}</div>
+            </div>
+            <p class="stats-sub">Bäst på exakta resultat! Har prickat in helt rätt målsiffra (12p) <strong>${advanced.expert.count}</strong> gånger.</p>
+        </div>
+
+        <div class="stats-card accent-warning">
+            <div>
+                <h3>🐌 Spurtaren</h3>
+                <div class="stats-main">${advanced.spurt.name}</div>
+            </div>
+            <p class="stats-sub">Formstarkast just nu! Har klättrat flest placeringar (<strong>${advanced.spurt.climb > 0 ? '+' : ''}${advanced.spurt.climb}</strong> platser) över de senaste 5 matcherna.</p>
+        </div>
+
+        <div class="stats-card accent-blue">
+            <div>
+                <h3>🦆 Följa John</h3>
+                <div class="stats-main">${advanced.john.name}</div>
+            </div>
+            <p class="stats-sub">Gruppens osynliga tvilling! Den som har valt samma tipsrad som majoriteten (Kollektivet) flest gånger (<strong>${advanced.john.count}</strong> matcher).</p>
+        </div>
+
+        <div class="stats-card accent-danger">
+            <div>
+                <h3>⚡ Vattendelaren</h3>
+                <div class="stats-main" style="font-size: 1.25rem; margin-top: 5px;">${advanced.divider.matchStr}</div>
+            </div>
+            <p class="stats-sub" style="margin-top: 10px;">Matchen som totalt splittrade gruppen i två läger. Här fanns det nästan inga lagom-tips, utan deltagarna spikade antingen resultatet helt eller bommade totalt. Gruppsnittet landade till slut på <strong>${advanced.divider.avgPoints.toFixed(1)}p</strong>.</p>
+        </div>
+
+        <div class="stats-card accent-green" style="grid-column: span 1;">
+            <div>
+                <h3>🎉 Lättaste matchen</h3>
+                <div class="stats-main" style="font-size: 1.25rem; margin-top: 5px;">${advanced.easiest.matchStr}</div>
+            </div>
+            <p class="stats-sub" style="margin-top: 10px;">Här gösslades det med poäng! Matchen genererade ett snitt på grymma <strong>${easiestAvg}p</strong> per deltagare.</p>
+        </div>
+
+        <div class="stats-card accent-danger">
+            <div>
+                <h3>💀 Svårtippade matchen</h3>
+                <div class="stats-main" style="font-size: 1.25rem; margin-top: 5px;">${advanced.hardest.matchStr}</div>
+            </div>
+            <p class="stats-sub" style="margin-top: 10px;">Här gick nästan hela gruppen bort sig. Matchen gav ett snitt på låga <strong>${hardestAvg}p</strong> per deltagare.</p>
+        </div>
+
+        <div class="stats-card accent-warning">
+            <div>
+                <h3>📊 Fördelning av resultat</h3>
+                <div class="stats-main" style="font-size: 1.1rem; margin-top: 10px; display: flex; justify-content: space-between; padding: 0 10px;">
+                    <span title="Hemmavinster">Hemmavinst: <strong>${advanced.matchOutcomes.homeWins}</strong></span>
+                    <span title="Oavgjorda">Oavgjord: <strong>${advanced.matchOutcomes.draws}</strong></span>
+                    <span title="Bortavinster">Bortavinst: <strong>${advanced.matchOutcomes.awayWins}</strong></span>
+                </div>
+            </div>
+            <p class="stats-sub" style="margin-top: 15px; font-size: 0.85rem;">Hur matcherna har slutat hittills under gruppspelet.</p>
+        </div>
+    `;
+}
+
+/* function renderPlayoffs() {
+    // 1. Mappa rundor till rätt behållare i index.html
+    const containers = {
+        'LAST_32': document.getElementById('bracket-r32'),
+        'LAST_16': document.getElementById('bracket-r16'),
+        'QUARTER_FINALS': document.getElementById('bracket-qf'),
+        'SEMI_FINALS': document.getElementById('bracket-sf'),
+        'FINAL': document.getElementById('bracket-final')
+    };
+
+    // Kör inte om bracketen inte finns i DOM
+    if (!containers['LAST_32']) return;
+
+    // Fast ordning på rundorna
+    const stageOrder = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
+
+    // Hur många matcher varje runda ska ha i trädet
+    const expectedCounts = {
+        'LAST_32': 16,
+        'LAST_16': 8,
+        'QUARTER_FINALS': 4,
+        'SEMI_FINALS': 2,
+        'FINAL': 1
+    };
+
+    // 2. Hämta slutspelsmatcher från state
+    const playoffMatches = (state.allMatches || [])
+        .filter(match => stageOrder.includes(match.stage))
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+    console.log("Hittade antal slutspelsmatcher i API-datan:", playoffMatches.length);
+
+    // 3. Gruppera per runda
+    const groupedMatches = {
+        'LAST_32': [],
+        'LAST_16': [],
+        'QUARTER_FINALS': [],
+        'SEMI_FINALS': [],
+        'FINAL': []
+    };
+
+    playoffMatches.forEach(match => {
+        if (groupedMatches[match.stage]) {
+            groupedMatches[match.stage].push(match);
+        }
+    });
+
+    // Säker team-rendering
+    const getTeamHTML = (team, score) => {
+        const teamNameRaw = team?.name?.toLowerCase?.() || '';
+
+        // Om lag inte är bestämt ännu
+        if (
+            !team ||
+            !team.name ||
+            teamNameRaw.includes('winner') ||
+            teamNameRaw.includes('runner')
+        ) {
+            return `
+                <div class="matchup-team">
+                    <span class="undecided">Ej avgjort</span>
+                    <span class="team-score">-</span>
+                </div>
+            `;
+        }
+
+        const teamName =
+            (typeof teamNamesSE !== 'undefined' && teamNamesSE[team.name]) ||
+            team.shortName ||
+            team.name ||
+            'Okänt lag';
+
+        const crest = team.crest || 'https://crests.football-data.org/wm26.png';
+        const displayScore = score !== null && score !== undefined ? score : '-';
+
+        return `
+            <div class="matchup-team">
+                <span class="team-info">
+                    <img src="${crest}" alt="${teamName}" class="flag-icon">
+                    ${teamName}
+                </span>
+                <span class="team-score">${displayScore}</span>
+            </div>
+        `;
+    };
+
+    // 4. Rendera varje runda
+    for (const stage of stageOrder) {
+        const container = containers[stage];
+        if (!container) continue;
+
+        const matchesInRound = groupedMatches[stage] || [];
+        const expectedCount = expectedCounts[stage];
+
+        let roundHtml = '';
+
+        // Vi renderar alltid fullt antal slots i trädet
+        for (let i = 0; i < expectedCount; i++) {
+            const match = matchesInRound[i] || null;
+            const matchIndex = i + 1;
+
+            // Viktigt för CSS-bracketen
+            const matchupClasses = [
+                'playoff-matchup',
+                `match-${matchIndex}`,
+                `round-${stage.toLowerCase()}`
+            ].join(' ');
+
+            if (match) {
+                const matchDate = new Date(match.utcDate);
+
+                const dayStr = matchDate.toLocaleDateString('sv-SE', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short'
+                });
+
+                const timeStr = matchDate.toLocaleTimeString('sv-SE', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const broadcasterHtml = match.broadcaster
+                    ? `<span class="tv-channel">${match.broadcaster.toUpperCase()}</span>`
+                    : `<span class="tv-channel"></span>`;
+
+                roundHtml += `
+                    <div class="${matchupClasses}" data-round="${stage}" data-match-index="${matchIndex}">
+                        <div class="matchup-meta">
+                            <span>${dayStr} - ${timeStr}</span>
+                            ${broadcasterHtml}
+                        </div>
+                        <div class="matchup-teams">
+                            ${getTeamHTML(match.homeTeam, match.score?.fullTime?.home)}
+                            ${getTeamHTML(match.awayTeam, match.score?.fullTime?.away)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Placeholder om matchen inte finns ännu
+                roundHtml += `
+                    <div class="${matchupClasses} is-placeholder" data-round="${stage}" data-match-index="${matchIndex}">
+                        <div class="matchup-meta">
+                            <span>TBD</span>
+                            <span class="tv-channel"></span>
+                        </div>
+                        <div class="matchup-teams">
+                            ${getTeamHTML(null, null)}
+                            ${getTeamHTML(null, null)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        container.innerHTML = roundHtml;
+    }
+} */
+
+function renderPlayoffs() {
+
+    const root = document.getElementById("playoff-bracket");
+    if (!root) return;
+
+    root.innerHTML = "";
+
+    const stageOrder = [
+        "LAST_32",
+        "LAST_16",
+        "QUARTER_FINALS",
+        "SEMI_FINALS",
+        "FINAL"
+    ];
+
+    const stageTitles = {
+        LAST_32: "Sextondelsfinaler",
+        LAST_16: "Åttondelsfinaler",
+        QUARTER_FINALS: "Kvartsfinaler",
+        SEMI_FINALS: "Semifinaler",
+        FINAL: "Final"
+    };
+
+    const expectedCounts = {
+        LAST_32: 16,
+        LAST_16: 8,
+        QUARTER_FINALS: 4,
+        SEMI_FINALS: 2,
+        FINAL: 1
+    };
+
+    const playoffMatches = (state.allMatches || [])
+        .filter(match => stageOrder.includes(match.stage))
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+    const grouped = {};
+
+    stageOrder.forEach(stage => grouped[stage] = []);
+
+    playoffMatches.forEach(match => {
+        grouped[match.stage].push(match);
+    });
+
+    function teamHtml(team, score) {
+
+        const undecided =
+            !team ||
+            !team.name ||
+            /winner|runner|tbd|to be decided/i.test(team.name);
+
+        if (undecided) {
+            return `
+                <div class="team">
+                    <div class="team-left">
+                        <span class="placeholder">Ej avgjort</span>
+                    </div>
+                    <div class="team-score">-</div>
+                </div>
+            `;
+        }
+
+        const name =
+            (typeof teamNamesSE !== "undefined" &&
+                teamNamesSE[team.name]) ||
+            team.shortName ||
+            team.name;
+
+        const crest =
+            team.crest ||
+            "https://crests.football-data.org/wm26.png";
+
+        return `
+            <div class="team">
+                <div class="team-left">
+                    <img class="flag-icon"
+                         src="${crest}"
+                         alt="${name}">
+                    <span>${name}</span>
+                </div>
+
+                <div class="team-score">
+                    ${score ?? "-"}
+                </div>
+            </div>
+        `;
+    }
+
+    function matchCard(match) {
+
+        if (!match) {
+
+            return `
+                <div class="match-card placeholder">
+
+                    <div class="match-header">
+                        TBD
+                    </div>
+
+                    ${teamHtml(null)}
+                    ${teamHtml(null)}
+
+                </div>
+            `;
+        }
+
+        const date = new Date(match.utcDate);
+
+        const day =
+            date.toLocaleDateString(
+                "sv-SE",
+                {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short"
+                });
+
+        const time =
+            date.toLocaleTimeString(
+                "sv-SE",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+        return `
+            <div class="match-card">
+
+                <div class="match-header">
+
+                    <span>${day} ${time}</span>
+
+                    <span class="tv">
+
+                        ${(match.broadcaster && match.broadcaster !== "unknown") 
+    ? match.broadcaster.toUpperCase() 
+    : "<span style='color: var(--text-muted);'>Ännu okänt</span>"}
+
+                    </span>
+
+                </div>
+
+                ${teamHtml(
+                    match.homeTeam,
+                    match.score?.fullTime?.home
+                )}
+
+                ${teamHtml(
+                    match.awayTeam,
+                    match.score?.fullTime?.away
+                )}
+
+            </div>
+        `;
+    }
+
+    function buildRound(stage) {
+
+        const round = document.createElement("div");
+        round.className = "round";
+
+        const title = document.createElement("div");
+        title.className = "round-title";
+        title.textContent = stageTitles[stage];
+
+        round.appendChild(title);
+
+        const body = document.createElement("div");
+        body.className = "round-body";
+
+        const matches = grouped[stage];
+
+        const total = expectedCounts[stage];
+
+        for (let i = 0; i < total; i++) {
+
+            const wrapper = document.createElement("div");
+
+            wrapper.className = "match-wrapper";
+
+            wrapper.innerHTML =
+                matchCard(matches[i]);
+
+            if (stage !== "FINAL") {
+
+                const connector =
+                    document.createElement("div");
+
+                connector.className =
+                    "connector";
+
+                connector.innerHTML = `
+                    <div class="connector-h"></div>
+                    <div class="connector-v"></div>
+                `;
+
+                wrapper.appendChild(connector);
+
+            }
+
+            body.appendChild(wrapper);
+
+        }
+
+        round.appendChild(body);
+
+        return round;
+
+    }
+
+    stageOrder.forEach(stage => {
+
+        root.appendChild(
+            buildRound(stage)
+        );
+
+    });
+    // ==========================================
+    // Justera vertikalt avstånd mellan rundorna
+    // ==========================================
+
+    requestAnimationFrame(() => {
+
+        const rounds = [...root.querySelectorAll(".round")];
+
+        for (let r = 1; r < rounds.length; r++) {
+
+            const previousCards =
+                [...rounds[r - 1].querySelectorAll(".match-wrapper")];
+
+            const currentCards =
+                [...rounds[r].querySelectorAll(".match-wrapper")];
+
+            currentCards.forEach((card, index) => {
+
+                const first =
+                    previousCards[index * 2];
+
+                const second =
+                    previousCards[index * 2 + 1];
+
+                if (!first || !second) return;
+
+                const y1 =
+                    first.offsetTop +
+                    first.offsetHeight / 2;
+
+                const y2 =
+                    second.offsetTop +
+                    second.offsetHeight / 2;
+
+                const target =
+                    (y1 + y2) / 2;
+
+                const current =
+                    card.offsetTop +
+                    card.offsetHeight / 2;
+
+                const delta =
+                    target - current;
+
+                card.style.marginTop =
+                    `${delta}px`;
+
+            });
+
+        }
+
+        // ======================================
+        // Rita connectorerna
+        // ======================================
+
+        const allRounds =
+            [...root.querySelectorAll(".round")];
+
+        allRounds.forEach((round, roundIndex) => {
+
+            if (roundIndex === allRounds.length - 1)
+                return;
+
+            const wrappers =
+                [...round.querySelectorAll(".match-wrapper")];
+
+            wrappers.forEach((wrapper, index) => {
+
+                const connector =
+                    wrapper.querySelector(".connector");
+
+                if (!connector)
+                    return;
+
+                const nextRound =
+                    allRounds[roundIndex + 1];
+
+                const nextCards =
+                    [...nextRound.querySelectorAll(".match-wrapper")];
+
+                const next =
+                    nextCards[Math.floor(index / 2)];
+
+                if (!next)
+                    return;
+
+                const yCurrent =
+                    wrapper.offsetTop +
+                    wrapper.offsetHeight / 2;
+
+                const yNext =
+                    next.offsetTop +
+                    next.offsetHeight / 2;
+
+                const vertical =
+                    connector.querySelector(".connector-v");
+
+                const diff =
+                    yNext - yCurrent;
+
+                vertical.style.height =
+                    `${Math.abs(diff)}px`;
+
+                if (diff >= 0) {
+
+                    vertical.style.top = "50%";
+                    vertical.style.bottom = "auto";
+
+                } else {
+
+                    vertical.style.bottom = "50%";
+                    vertical.style.top = "auto";
+
+                }
+
+                connector.classList.toggle(
+                    "down",
+                    diff > 0
+                );
+
+                connector.classList.toggle(
+                    "up",
+                    diff < 0
+                );
+
+            });
+
+        });
+
+    });
+
+}
+
+// Hjälpfunktion för att veta hur många placeholders som behövs om API:et saknar framtida rundor
+function getExpectedMatchCount(stage) {
+    switch(stage) {
+        case 'LAST_32': return 16;
+        case 'LAST_16': return 8;
+        case 'QUARTER_FINALS': return 4;
+        case 'SEMI_FINALS': return 2;
+        case 'FINAL': return 1;
+        default: return 0;
+    }
+} 
 
 function setupTabs() {
     const tabs = {
         "btn-matches": ["view-matches", false],
         "btn-ranking": ["view-ranking", false],
         "btn-matrix": ["view-matrix", true],
-        "btn-trend": ["view-trend", false] // NY FLiK FÖR TREND
+        "btn-trend": ["view-trend", false],
+        "btn-stats": ["view-stats", false],
+        "btn-playoffs": ["view-playoffs", false]
     };
 
     Object.keys(tabs).forEach(btnId => {
@@ -468,13 +1280,16 @@ function setupTabs() {
                 fullWidth ? container.classList.add("full-width") : container.classList.remove("full-width");
             }
 
+            // --- NYTT: NOLLSTÄLL SIMULERINGEN OM MAN LÄMNAR TABELLEN ---
+            if (btnId !== "btn-ranking") {
+                state.simulationResult = null;
+                const simInput = document.getElementById("simulation-input");
+                if (simInput) simInput.value = "";
+            }
+            // -----------------------------------------------------------
+
             // --- HÄR ÄR ÄNDRINGEN FÖR ATT DÖLJA/VISA FILTER-KNAPPEN ---
-            // Vi letar efter checkboxen. Om din checkbox ligger i en container (t.ex. en label eller div), 
-            // kan du byta ut "hide-finished-checkbox" mot det ID:t istället.
             const filterElement = document.getElementById("hide-finished-checkbox");
-            
-            // Om du har en tillhörande text/label till knappen som du vill dölja, 
-            // döljer vi oftast dess förälder (parent) för att få med allt:
             const filterContainer = filterElement ? filterElement.parentElement : null;
             
             if (filterContainer) {
@@ -489,6 +1304,8 @@ function setupTabs() {
             if (btnId === "btn-ranking") renderRanking();
             if (btnId === "btn-matrix") renderMatrix();
             if (btnId === "btn-trend") renderTrendChart();
+            if (btnId === "btn-stats") renderStats();
+            if (btnId === "btn-playoffs") renderPlayoffs();
         });
     });
 
@@ -516,6 +1333,7 @@ async function updateApiData() {
         if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
         if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
         if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart();
+        if (!document.getElementById("view-stats").classList.contains("hidden")) renderStats();
     } catch (error) {
         console.error("Kunde inte hämta live-data från API:", error);
     }
@@ -559,6 +1377,7 @@ async function start() {
         if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
         if (!document.getElementById("view-matrix").classList.contains("hidden")) renderMatrix();
         if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart();
+        if (!document.getElementById("view-stats").classList.contains("hidden")) renderStats();
     });
 
     document.getElementById("hide-finished-checkbox").addEventListener("change", (e) => {
@@ -569,6 +1388,44 @@ async function start() {
             renderMatrix();
         }
     });
+
+    document.addEventListener("pointerdown", function() { /* Valfritt, men vi kör standard events nedan */ });
+    
+    document.addEventListener("click", function(e) {
+        // 1. Klick på "Simulera"
+        if (e.target && e.target.id === "btn-simulate") {
+            runSimulation();
+        }
+
+        // 2. Klick på "Rensa"
+        if (e.target && e.target.id === "btn-clear-simulation") {
+            const input = document.getElementById("simulation-input");
+            if (input) input.value = "";
+            state.simulationResult = null;
+            renderRanking();
+        }
+    });
+
+    // Fångar upp Enter-tryck i samma fält
+    document.addEventListener("keydown", function(e) {
+        if (e.target && e.target.id === "simulation-input" && e.key === "Enter") {
+            runSimulation();
+        }
+    });
+
+    // En liten hjälpfunktion inuti start() för att slippa dubbelklippa logiken
+    function runSimulation() {
+        const input = document.getElementById("simulation-input");
+        if (!input) return;
+        
+        const val = input.value.trim();
+        if (/^\d+-\d+$/.test(val)) {
+            state.simulationResult = val;
+            renderRanking(); // Kör renderRanking som du ändrade till
+        } else {
+            alert("Ange resultatet i formatet hemmamål-bortamål, t.ex. '2-1'");
+        }
+    }
 
     // Kör första hämtningen direkt vid start
     await updateApiData();
@@ -587,8 +1444,11 @@ function renderTrendChart() {
         .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 
     if (finishedMatches.length === 0) {
-        // Om inga matcher spelas än, rensa och visa ett meddelande i canvasen
-        if (state.trendChartInstance) state.trendChartInstance.destroy();
+        // Om inga matcher spelas än, rensa grafen från minnet
+        if (state.trendChartInstance) {
+            state.trendChartInstance.destroy();
+            state.trendChartInstance = null;
+        }
         return;
     }
 
@@ -624,86 +1484,89 @@ function renderTrendChart() {
         const userMatchData = snapshotRanking.find(x => x.name === state.currentUser);
         const currentPos = userMatchData ? orderedPoints.indexOf(userMatchData.points) + 1 : null;
 
-        // Använd match-nyckeln (t.ex. "SWE-UKR") eller bara "Match X" som etikett i x-axeln
+        // Använd match-nyckeln (t.ex. "SWE-UKR") som etikett i x-axeln
         const lastMatch = currentMatchesAtLimit[currentMatchesAtLimit.length - 1];
         labels.push(getMatchKey(lastMatch));
         positions.push(currentPos);
     }
 
-    // 3. Förstör tidigare graf-instans om den finns innan vi ritar en ny
+    // 3. UPPDATERA ELLER SKAPA GRAFEN
     if (state.trendChartInstance) {
-        state.trendChartInstance.destroy();
-    }
-
-    // 4. Skapa den nya grafen med Chart.js
-    state.trendChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '',
-                data: positions,
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                borderWidth: 3,
-                tension: 0.2, // Gör linjen lite mjukare kurvad
-                pointRadius: 4,
-                pointBackgroundColor: '#007bff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    reverse: true, // VÄNDER AXELN: Pos 1 hamnar högst upp!
-                    min: 1,
-                    max: 33,
-                    ticks: {
-                        stepSize: 1,
-                        precision: 0
+        // Grafen finns redan! Uppdatera bara värdena sömlöst utan omritning/blink
+        state.trendChartInstance.data.labels = labels;
+        state.trendChartInstance.data.datasets[0].data = positions;
+        
+        // 'none' stänger av animationen just vid denna uppdatering så den känns helt stabil
+        state.trendChartInstance.update('none'); 
+    } else {
+        // Första gången funktionen körs skapar vi grafen och sparar den i globala state
+        state.trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '',
+                    data: positions,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.2, 
+                    pointRadius: 4,
+                    pointBackgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        reverse: true, // VÄNDER AXELN: Pos 1 hamnar högst upp!
+                        min: 1,
+                        max: 33,
+                        ticks: {
+                            stepSize: 1,
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Placering'
+                        }
                     },
-                    title: {
-                        display: true,
-                        text: 'Placering'
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Matcher'
+                        }
                     }
                 },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Matcher'
+                plugins: {
+                    legend: {
+                        display: false,
+                        position: 'top'
                     }
                 }
             },
-            plugins: {
-                legend: {
-                    display: false,
-                    position: 'top'
+            plugins: [{
+                id: 'customDataLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillStyle = '#007bff'; 
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+
+                    chart.getDatasetMeta(0).data.forEach((point, index) => {
+                        const value = data.datasets[0].data[index];
+                        if (value !== null && value !== undefined) {
+                            ctx.fillText(value, point.x, point.y - 10);
+                        }
+                    });
+                    ctx.restore();
                 }
-            }
-        },
-
-        plugins: [{
-            id: 'customDataLabels',
-            afterDatasetsDraw(chart) {
-                const { ctx, data } = chart;
-                ctx.save();
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = '#007bff'; // Samma blåa färg som linjen
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-
-                chart.getDatasetMeta(0).data.forEach((point, index) => {
-                    const value = data.datasets[0].data[index];
-                    if (value !== null && value !== undefined) {
-                        // Ritar ut placeringen precis ovanför (y - 10) varje punkt (x)
-                        ctx.fillText(value, point.x, point.y - 10);
-                    }
-                });
-                ctx.restore();
-            }
-        }]
-    });
+            }]
+        });
+    }
 }
 
 function getCollectivePredictions() {
@@ -745,6 +1608,59 @@ function toggleMatrixSort() {
     state.matrixSortByRanking = !state.matrixSortByRanking;
     renderMatrix();
 }
+
+// Hämta elementen från HTML
+const btnChangelog = document.getElementById('btn-changelog');
+const changelogModal = document.getElementById('changelog-modal');
+const closeChangelog = document.getElementById('close-changelog');
+const changelogContent = document.getElementById('changelog-content');
+
+// 1. Klick på "Changelog"-knappen -> Hämta textfilen och öppna modalen
+btnChangelog.addEventListener('click', () => {
+    // Öppna modalen direkt
+    changelogModal.classList.remove('hidden');
+    
+    // Hämta innehållet live från din textfil (lägg till ett unikt tidsindex så webbläsaren inte cachar den gamla filen)
+    fetch('changelog.txt?v=' + new Date().getTime())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Kunde inte ladda changelog.txt');
+            }
+            return response.text();
+        })
+        .then(text => {
+            // 1. Skydda mot oväntad HTML (XSS-säkerhet) eftersom vi ska använda innerHTML
+            let formattedText = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+            // 2. FIXA FET STIL: Gör om **text** till <strong>text</strong>
+            formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // 3. FIXA PUNKT-LISTA: Rader som börjar med "-" eller "*" får en snygg indragen punkt
+            formattedText = formattedText.replace(/^[-\*]\s+(.*)$/gm, '<span style="padding-left: 8px; display: inline-block;">• $1</span>');
+
+            // Injektera den formaterade texten som HTML
+            changelogContent.innerHTML = formattedText;
+        })
+        .catch(error => {
+            changelogContent.textContent = 'Kunde inte ladda historiken just nu.';
+            console.error(error);
+        });
+});
+
+// 2. Klick på krysset -> Stäng modalen
+closeChangelog.addEventListener('click', () => {
+    changelogModal.classList.add('hidden');
+});
+
+// 3. Klick utanför modalen -> Stäng modalen
+window.addEventListener('click', (e) => {
+    if (e.target === changelogModal) {
+        changelogModal.classList.add('hidden');
+    }
+});
 
 
 start();

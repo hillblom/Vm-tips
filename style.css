@@ -1,15 +1,52 @@
 :root {
+    /* Bakgrunder och grundläggande layout */
     --bg-color: #f8f9fa;
     --card-bg: #ffffff;
+    --border-color: #dee2e6;
+    --table-border: #dddddd;
+    
+    /* Textfärger */
     --text-color: #212529;
     --text-muted: #6c757d;
-    --border-color: #dee2e6;
+    --text-dark: #333333;
+    --text-light: #ffffff;
+    
+    /* Temafärger och knappar */
     --primary-color: #007bff;
     --primary-hover: #0056b3;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
     --tbl-btn-active-bg: #0b4e92;
+    --hover-bg: #f1f3f5;
+    --hover-sticky-bg: #e9ecef;
+    
+    /* Statusfärger (Match / Tipsutfall) */
+    --success-color: #28a745;
+    --success-bg: #d4edda;
+    --success-text: #155724;
+    --success-cell-bg: #c3e6cb;
+    
+    --warning-color: #ffc107;
+    --warning-bg: #fff3cd;
+    --warning-text: #856404;
+    --warning-cell-bg: #ffeeba;
+    
+    --danger-color: #dc3545;
+    --danger-bg: #f8d7da;
+    --danger-text: #721c24;
+    --danger-cell-bg: #f5c6cb;
+    
+    /* Övrigt & Tooltip / Modaler */
+    --bot-panel-bg: rgba(0, 123, 255, 0.05);
+    --bot-row-bg: rgba(0, 123, 255, 0.15);
+    --tooltip-bg: rgba(33, 37, 41, 0.96);
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-dark: rgba(0, 0, 0, 0.3);
+
+    --bracket-line: #d9dee5;
+    --line-half-r32-r16: 61px;   /* halva höjden mellan 16-delsmatcher */
+    --line-half-r16-qf: 115px;   /* halva höjden mellan 8-delsmatcher */
+    --line-half-qf-sf: 215px;    /* halva höjden mellan kvartsfinaler */
+    --line-half-sf-final: 120px; /* halva höjden mellan semifinaler */
 }
 
 * {
@@ -29,6 +66,7 @@ body {
     max-width: 1000px;
     margin: 0 auto;
     transition: max-width 0.2s ease;
+    padding-bottom: 30px;
 }
 
 .container.full-width {
@@ -51,7 +89,7 @@ header {
 
 h1 {
     font-size: 1.8rem;
-    color: #333;
+    color: var(--text-dark);
 }
 
 /* Placerar deltagarväljaren och kryssrutan på samma rad */
@@ -87,7 +125,7 @@ select {
     padding: 6px 12px;
     border-radius: 4px;
     border: 1px solid var(--border-color);
-    background-color: #fff;
+    background-color: var(--card-bg);
     font-size: 0.95rem;
     outline: none;
 }
@@ -127,7 +165,7 @@ select {
 
 .tab-btn:hover {
     color: var(--text-color);
-    background-color: #e9ecef;
+    background-color: var(--hover-bg);
 }
 
 .tab-btn.active {
@@ -140,7 +178,7 @@ select {
 .card {
     background-color: var(--card-bg);
     border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px var(--shadow-color);
     padding: 15px;
     margin-bottom: 20px;
     overflow-x: auto;
@@ -163,17 +201,17 @@ th, td {
 }
 
 th {
-    background-color: #f1f3f5;
+    background-color: var(--bg-color);
     font-weight: 600;
 }
 
-tr.green { background-color: #d4edda !important; color: #155724; }
-tr.yellow { background-color: #fff3cd !important; color: #856404; }
-tr.red { background-color: #f8d7da !important; color: #721c24; }
+tr.green { background-color: var(--success-bg) !important; color: var(--success-text); }
+tr.yellow { background-color: var(--warning-bg) !important; color: var(--warning-text); }
+tr.red { background-color: var(--danger-bg) !important; color: var(--danger-text); }
 
-td.green { background-color: #c3e6cb !important; color: #155724; }
-td.yellow { background-color: #ffeeba !important; color: #856404; }
-td.red { background-color: #f5c6cb !important; color: #721c24; }
+td.green { background-color: var(--success-cell-bg) !important; color: var(--success-text); }
+td.yellow { background-color: var(--warning-cell-bg) !important; color: var(--warning-text); }
+td.red { background-color: var(--danger-cell-bg) !important; color: var(--danger-text); }
 
 .tv-logo {
     height: 12px;
@@ -182,16 +220,16 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .highlight-user-row td {
-    border-top: 2px solid #212529 !important;    /* Övre ramen (mörkgrå/svart) */
-    border-bottom: 2px solid #212529 !important; /* Undre ramen */
+    border-top: 2px solid var(--text-color) !important;
+    border-bottom: 2px solid var(--text-color) !important;
 }
 
 .highlight-user-row td:first-child {
-    border-left: 2px solid #212529 !important;   /* Vänsterkanten på raden */
+    border-left: 2px solid var(--text-color) !important;
 }
 
 .highlight-user-row td:last-child {
-    border-right: 2px solid #212529 !important;  /* Högerkanten på raden */
+    border-right: 2px solid var(--text-color) !important;
 }
 
 .ranking-name-wrapper {
@@ -218,7 +256,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 /* --- MATRISFLIKEN --- */
 .matrix-wrapper {
     width: 100%;
-    overflow-x: auto;
+    overflow: auto;
     max-height: 75vh;
 }
 
@@ -229,80 +267,85 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .matrix-table th, .matrix-table td { 
-    border: 1px solid #ddd; 
+    border: 1px solid var(--table-border); 
     padding: 0px 2px; 
     text-align: center; 
     white-space: nowrap; 
     font-weight: normal; 
 }
 
-.matrix-table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
+.matrix-table thead {
     position: sticky;
     top: 0;
+    z-index: 12;
+}
+
+.matrix-table th {
+    background-color: var(--bg-color);
+    font-weight: 600;
+    position: sticky;
+    top: 0px;
     z-index: 10;
 }
 
 .matrix-sticky-pos {
     position: sticky;
     left: 0;
-    background-color: #fff;
+    background-color: var(--card-bg);
     z-index: 5;
     font-weight: normal;
     min-width: 35px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    box-shadow: 2px 0 5px var(--shadow-color);
 }
 
 .matrix-sticky-name {
     position: sticky;
     left: 35px;
-    background-color: #fff;
+    background-color: var(--card-bg);
     z-index: 5;
     text-align: left !important;
     font-size: 0.9rem;
     font-weight: normal;
     min-width: 100px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    box-shadow: 2px 0 5px var(--shadow-color);
 }
 
-/* Låser fast "Pos"-rubriken i krysset uppe till vänster */
 .matrix-table th.matrix-sticky-pos {
     position: sticky;
     left: 0;
     top: 0;
-    z-index: 15;
-    background-color: #f8f9fa;
+    z-index: 30 !important;
+    background-color: var(--bg-color);
 }
 
-/* Låser fast "Deltagare ↕️"-rubriken uppe till vänster */
+/* UPPDATERAD: Hört z-index till 30 så att "Deltagare" stannar överst vid all scroll */
 .matrix-table th.matrix-sticky-name {
     position: sticky;
     left: 35px;
     top: 0;
-    z-index: 15;
-    background-color: #f8f9fa;
+    z-index: 30 !important;
+    background-color: var(--bg-color);
     text-align: left !important;
 }
 
 .matrix-table tr:hover td {
-    background-color: #f1f3f5;
+    background-color: var(--hover-bg);
 }
 
 .matrix-table tr:hover td.matrix-sticky-pos,
 .matrix-table tr:hover td.matrix-sticky-name {
-    background-color: #e9ecef;
+    background-color: var(--hover-sticky-bg);
 }
 
 .matrix-th-match {
     font-size: 0.85rem;
     font-weight: normal !important;
-    color: #333;
+    color: var(--text-dark);
 }
 
 .matrix-th-res { 
     font-size: 0.85rem; 
-    color: #007bff; 
+    color: var(--primary-color); 
     margin-top: 2px; 
     font-weight: bold; 
 }
@@ -319,6 +362,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     font-style: italic;
 }
 
+
 /* --- MODAL --- */
 .modal {
     position: fixed;
@@ -326,7 +370,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    background-color: var(--modal-overlay);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -334,13 +378,13 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .modal-content {
-    background-color: #fff;
+    background-color: var(--card-bg);
     padding: 25px;
     border-radius: 6px;
     max-width: 500px;
     width: 90%;
     position: relative;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px var(--shadow-dark);
 }
 
 .close-btn {
@@ -371,8 +415,8 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .rules-btn {
-    background-color: #6c757d;
-    color: white;
+    background-color: var(--text-muted);
+    color: var(--text-light);
     border: none;
     padding: 6px 12px;
     border-radius: 4px;
@@ -381,7 +425,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .rules-btn:hover {
-    background-color: #5a6268;
+    background-color: #5a6268; /* En kombinerad nyans nära hover-grå */
 }
 
 /* Layout för rankingfliken */
@@ -391,13 +435,11 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     align-items: flex-start;
 }
 
-/* Tabellen tar upp 65-70% av bredden */
 .ranking-main-table {
     flex: 2;
     margin-bottom: 0;
 }
 
-/* Infopanelen tar upp resterande del */
 .ranking-side-panel {
     flex: 1;
     min-width: 280px;
@@ -405,7 +447,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     background-color: var(--card-bg);
 }
 
-/* Matchinfo i toppen */
 .match-info-grid {
     display: flex;
     justify-content: space-between;
@@ -415,7 +456,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 
 .info-box {
     flex: 1;
-    background: #f8f9fa;
+    background: var(--bg-color);
     padding: 10px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
@@ -435,7 +476,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     color: var(--text-color);
 }
 
-/* Avdelare */
 .panel-divider {
     border: 0;
     border-top: 1px solid var(--border-color);
@@ -447,7 +487,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     margin-bottom: 10px;
 }
 
-/* Listan för Topp 5 */
 .top-five-list {
     padding-left: 20px;
     font-weight: 500;
@@ -456,7 +495,6 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     margin-bottom: 4px;
 }
 
-/* Trendkorten för Raket/Fritt fall */
 .trends-section {
     display: flex;
     flex-direction: column;
@@ -471,7 +509,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 .trend-card h4 {
     font-size: 0.85rem;
     margin-bottom: 4px;
-    color: #333;
+    color: var(--text-dark);
 }
 
 .trend-card p {
@@ -479,10 +517,9 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     font-weight: bold;
 }
 
-.trend-card.climb { background-color: #d4edda; color: #155724; }
-.trend-card.drop { background-color: #f8d7da; color: #721c24; }
+.trend-card.climb { background-color: var(--success-bg); color: var(--success-text); }
+.trend-card.drop { background-color: var(--danger-bg); color: var(--danger-text); }
 
-/* Responsivitet för mobiler */
 @media (max-width: 768px) {
     .ranking-layout-container {
         flex-direction: column;
@@ -493,7 +530,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 #view-matches tbody tr {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-bottom: none !important; /* Tar bort den extra dubbellinjen från raden */
 }
 
 #view-matches {
@@ -510,7 +547,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     align-items: center;
     justify-content: flex-start; 
     gap: 8px; 
-    border-bottom: none; 
+    /*border-bottom: none; */
 }
 
 #view-matches th:nth-child(3), #view-matches td:nth-child(3),
@@ -537,7 +574,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     display: flex !important;
     justify-content: center !important; 
     width: 100% !important;
-    border-bottom: 1px solid #dee2e6; 
+    border-bottom: 1px solid var(--border-color); 
 }
 
 .filter-container, .user-selector-zone {
@@ -556,8 +593,8 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .bot-explanation-card {
-    background-color: rgba(0, 123, 255, 0.05);
-    border-left: 4px solid #007bff;
+    background-color: var(--bot-panel-bg);
+    border-left: 4px solid var(--primary-color);
     padding: 15px;
     margin-top: 20px;
     border-radius: 4px;
@@ -566,13 +603,13 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 .bot-explanation-card h4 {
-    color: #0056b3;
+    color: var(--primary-hover);
     margin-bottom: 6px;
     font-size: 0.95rem;
 }
 
 .bot-explanation-card p {
-    color: #495057;
+    color: #495057; /* Behållen specifik brödtextgrå för läsbarhet */
     margin-bottom: 6px;
 }
 
@@ -581,7 +618,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 }
 
 /* ==========================================================================
-   2. MATRIS TOOLTIP (RENSAD OCH FUNGERANDE)
+   2. MATRIS TOOLTIP
    ========================================================================== */
 
 .matrix-table th.matrix-tooltip-cell, 
@@ -590,38 +627,30 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     cursor: pointer !important;
 }
 
-/* Själva tooltip-boxen */
 .matrix-tooltip-cell .matrix-tooltip-box {
     visibility: hidden !important;
     position: absolute !important;
-    
-    /* Tvingar den att ligga ovanför allt, även utanför scroll-wrappers */
     z-index: 99991 !important; 
-    
-    /* Placerar boxen centrerat ovanför cellen */
     bottom: 100% !important;
     left: 50% !important;
-    transform: translate(-50%, -4px) !important; /* Flyttar upp 4px från kanten */
+    transform: translate(-50%, -4px) !important; 
     
-    /* Styling */
     width: auto !important;
-    background-color: rgba(33, 37, 41, 0.98) !important;
-    color: #fff !important;
+    background-color: var(--tooltip-bg) !important;
+    color: var(--text-light) !important;
     text-align: center !important;
     padding: 6px 12px !important;
     border-radius: 4px !important;
     font-size: 0.75rem !important;
     font-weight: normal !important;
     white-space: nowrap !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 4px 12px var(--shadow-dark) !important;
     pointer-events: none !important;
     
-    /* Toning */
     opacity: 0 !important;
     transition: opacity 0.15s ease-in-out !important;
 }
 
-/* Liten pil i botten */
 .matrix-tooltip-cell .matrix-tooltip-box::after {
     content: "" !important;
     position: absolute !important;
@@ -630,24 +659,49 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
     margin-left: -5px !important;
     border-width: 5px !important;
     border-style: solid !important;
-    border-color: rgba(33, 37, 41, 0.98) transparent transparent transparent !important;
+    border-color: var(--tooltip-bg) transparent transparent transparent !important;
 }
 
-/* VISA VID HOVER */
 .matrix-tooltip-cell:hover .matrix-tooltip-box {
     visibility: visible !important;
     opacity: 1 !important;
 }
 
-/* VIKTIGT: Förhindra att `.matrix-wrapper` klipper av tooltipen i höjdled */
 .matrix-wrapper {
     overflow-x: auto !important;
-    overflow-y: visible !important; /* Låter tooltipen sticka upp i toppkanten */
-    padding-top: 30px !important;    /* Ger lite extra luft i toppen så rutan får plats */
+    overflow-y: auto !important; 
+    padding-top: 0px !important;    
+}
+
+/* --- KORRIGERING: HÖJ Z-INDEX PÅ HOVRAE CELLER SÅ DE HAMNAR ÖVER STICKY-HEADERS --- */
+.matrix-table th.matrix-tooltip-cell:hover,
+.matrix-table td.matrix-sticky-pos:hover,
+.matrix-table td.matrix-sticky-name:hover {
+    z-index: 100 !important;
+}
+
+.matrix-table td.matrix-tooltip-cell:not([class*="matrix-sticky"]):hover {
+    position: relative !important;
+    z-index: 100 !important;
+}
+
+/* --- KORRIGERING: VÄND RUTA & PIL NEDÅT FÖR RUBRIKER + RAD 1-3 SÅ DET INTE KLIPPS AV OVERFLOW --- */
+.matrix-table th.matrix-tooltip-cell .matrix-tooltip-box,
+.matrix-table tbody tr:nth-child(-n+3) td.matrix-tooltip-cell .matrix-tooltip-box {
+    bottom: auto !important;
+    top: 100% !important;
+    transform: translate(-50%, 4px) !important;
+}
+
+.matrix-table th.matrix-tooltip-cell .matrix-tooltip-box::after,
+.matrix-table tbody tr:nth-child(-n+3) td.matrix-tooltip-cell .matrix-tooltip-box::after {
+    top: auto !important;
+    bottom: 100% !important;
+    border-color: transparent transparent var(--tooltip-bg) transparent !important;
 }
 
 /* ==========================================================================
-   3. MOBILBLOCK (Ligger absolut sist för att gälla över allt annat!)
+   3. MOBILBLOCK
    ========================================================================== */
 @media (max-width: 410px) {
     #view-matches td {
@@ -680,7 +734,7 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
         vertical-align: middle !important; 
         min-width: 80px !important;
         white-space: nowrap !important;
-        border-bottom: none !important;
+        /*border-bottom: none !important;*/
         padding-left: 6px !important;
     }
 
@@ -730,4 +784,240 @@ td.red { background-color: #f5c6cb !important; color: #721c24; }
 .trend-chart-card {
     padding: 20px;
     min-height: 350px;
+}
+
+/* --- STATISTIKFLIKEN (KORT-GRID) --- */
+.stats-grid {
+    display: grid;
+    /* Skapar 2 kolumner i bredd på skärmar som tillåter det, annars bryter den ner till 1 kolumn */
+    grid-template-columns: repeat(auto-fit, minmax(calc(50% - 10px), 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.stats-card {
+    background-color: var(--card-bg, #ffffff);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px var(--shadow-color, rgba(0,0,0,0.1));
+    padding: 20px;
+    border-top: 4px solid var(--border-color, #ccc);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Accentfärgerna som styr den färgade kanten i toppen på korten */
+.stats-card.accent-blue { border-top-color: #007bff; }
+.stats-card.accent-green { border-top-color: #28a745; }
+.stats-card.accent-danger { border-top-color: #dc3545; }
+.stats-card.accent-warning { border-top-color: #ffc107; }
+
+.stats-card h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--text-muted, #6c757d);
+    margin: 0 0 10px 0;
+    letter-spacing: 0.5px;
+}
+
+.stats-card .stats-main {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-color, #212529);
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.stats-card .stats-sub {
+    font-size: 0.9rem;
+    color: var(--text-muted, #6c757d);
+    margin: 0;
+}
+
+.stats-card .stats-sub strong {
+    color: var(--text-color, #212529);
+}
+
+/* Mobilanpassning: Blir 1 kolumn på smala skärmar */
+@media (max-width: 600px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.highlight-simulation-row td {
+    background-color: rgba(111, 66, 193, 0.15) !important; /* Ljuslila magisk ton */
+    color: #6f42c1 !important;
+    font-weight: bold;
+    border-top: 2px dashed #6f42c1 !important;
+    border-bottom: 2px dashed #6f42c1 !important;
+}
+
+/* ==========================================================================
+   VM-TIPS 2026 - DYNAMISKT SLUTSPELSTRÄD (NY JS-VERSION)
+   ========================================================================== */
+
+#view-playoffs {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 20px;
+}
+
+#playoff-bracket {
+    display: flex;
+    align-items: stretch;
+    gap: 40px; /* Exakt 40px gap för att rymma linjerna */
+    padding: 20px;
+    min-height: 1400px; /* Extremt viktigt: Tvingar fram en höjd så JS kan räkna spridningen */
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    min-width: 220px;
+}
+
+.round-title {
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+    height: 30px;
+}
+
+.round-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around; /* Sprider automatiskt ut Sextondelsfinalerna */
+    flex: 1;
+    position: relative;
+}
+
+.match-wrapper {
+    position: relative;
+    width: 100%;
+    /* Margin-top styrs automatiskt av din requestAnimationFrame-script! */
+}
+
+.match-card {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    position: relative;
+    z-index: 2; /* Ligger över linjerna */
+}
+
+.match-card .match-header {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.match-card .match-header .tv {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.team {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    height: 24px;
+    margin: 2px 0;
+}
+
+.team-left {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.team-left .flag-icon {
+    width: 20px;
+    height: 14px;
+    object-fit: cover;
+    margin-right: 8px;
+    border-radius: 2px;
+    border: 1px solid #ddd;
+}
+
+.team-score {
+    font-weight: bold;
+    font-size: 0.9rem;
+    background-color: var(--card-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    min-width: 20px;
+    text-align: center;
+}
+
+.placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: normal;
+}
+
+/* ==========================================================================
+   LINJERNA / CONNECTORS (STYRS AV DIN NYA JAVASCRIPT)
+   ========================================================================== */
+
+.connector {
+    position: absolute;
+    top: 0;
+    right: -40px; /* Matchar exakt gap: 40px på bracket-containern */
+    bottom: 0;
+    width: 40px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Linje horisontellt från högerkanten av kortet ut till halva gapet (20px) */
+.connector-h {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 20px;
+    height: 2px;
+    background-color: var(--border-color);
+    transform: translateY(-50%);
+}
+
+/* Den vertikala linjen! Placerad exakt på mitten av gapet (left: 20px) */
+/* Höjden (height) samt top/bottom injiceras live av din app.js! */
+.connector-v {
+    position: absolute;
+    left: 20px; 
+    width: 2px;
+    background-color: var(--border-color);
+}
+
+/* Horisontell linje som går in i NÄSTA kort från mitten-gapet */
+.round:not(:first-child) .match-wrapper::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background-color: var(--border-color);
+    transform: translateY(-50%);
+    z-index: 1;
 }
