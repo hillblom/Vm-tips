@@ -5,3 +5,6 @@
 - Lagt till fliken Statistik med lite blandad info.
 - I Tabell kan man lägga in och se hur ett resultat skulle ge i poäng om alla matcher spelades med det resultatet.
 - Lagt till flik Slutspel. Osäkert i dagsläget hur väl den kommer fungera. Framförallt gällande vilken TV-kanal som sänder matchen. Se fliken som beta.
+
+**2026-06-26**
+- Såg konstigt ut i Matrisen när man döljde matcherna.

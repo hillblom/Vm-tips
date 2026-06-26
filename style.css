@@ -264,6 +264,8 @@ td.red { background-color: var(--danger-cell-bg) !important; color: var(--danger
     font-size: 0.85rem;
     border-spacing: 0;
     border-collapse: separate;
+    width: auto !important;
+    margin: 0 auto !important;
 }
 
 .matrix-table th, .matrix-table td { 
