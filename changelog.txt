@@ -8,3 +8,6 @@
 
 **2026-06-26**
 - Såg konstigt ut i Matrisen när man döljde matcherna.
+
+**2026-06-29**
+- Slutspelsfliken fungerar inte som tänkt och är borttagen.

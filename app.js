@@ -7,7 +7,9 @@ const state = {
     matrixSortByRanking: true,
     hideFinishedMatches: false,
     trendChartInstance: null,
-    simulationResult: null
+    simulationResult: null,
+    currentStageFilter: localStorage.getItem("selectedStageFilter") || "GROUP_STAGE",
+    teamGroups: {}
 };
 
 const dom = {};
@@ -49,6 +51,21 @@ function getBroadcasterHtml(match) {
     return `<span style="font-size:0.7rem; color:var(--text-muted)">-</span>`;
 }
 
+// NYTT: Går igenom matcherna och mappar lag till deras respektive grupper
+function buildTeamGroupMapping() {
+    state.teamGroups = {};
+    state.allMatches.forEach(match => {
+        if (match.stage === "GROUP_STAGE" && match.group) {
+            if (match.homeTeam && match.homeTeam.name) {
+                state.teamGroups[match.homeTeam.name] = match.group;
+            }
+            if (match.awayTeam && match.awayTeam.name) {
+                state.teamGroups[match.awayTeam.name] = match.group;
+            }
+        }
+    });
+}
+
 function getMatchKey(match) {
     const homeTLA = nameToTlaMap[match.homeTeam?.name] || match.homeTeam?.tla || "???";
     const awayTLA = nameToTlaMap[match.awayTeam?.name] || match.awayTeam?.tla || "???";
@@ -74,6 +91,73 @@ function getFinishedGroupMatches() {
     return getGroupStageMatches()
         .filter(match => match.status === "FINISHED")
         .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+}
+
+function getAllGroupMatchesChronological() {
+    return getGroupStageMatches()
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+}
+
+function escapeCsvValue(value) {
+    const text = String(value ?? "");
+    if (/[",\r\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+}
+
+function downloadCsv(filename, rows) {
+    const csvContent = rows
+        .map(row => row.map(escapeCsvValue).join(","))
+        .join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function exportRankingCsv() {
+    const groupMatches = getAllGroupMatchesChronological();
+    const participants = Object.keys(state.allPredictions).sort((a, b) => a.localeCompare(b, "sv"));
+
+    if (groupMatches.length === 0 || participants.length === 0) {
+        alert("Ingen data hittades att exportera.");
+        return;
+    }
+
+    const headerRow = ["Deltagare"];
+    groupMatches.forEach((match, index) => {
+        headerRow.push(`${index + 1} ${getMatchKey(match)}`);
+    });
+
+    const rows = [headerRow];
+
+    participants.forEach(name => {
+        const userPredictions = state.allPredictions[name] || {};
+        const row = [name];
+        let cumulativeScore = 0;
+
+        groupMatches.forEach(match => {
+            const key = getMatchKey(match);
+            const prediction = getPredictionFromKey(userPredictions, key);
+
+            if (match.status === "FINISHED" && prediction !== "-") {
+                cumulativeScore += calculatePointsAdvanced(match, prediction, userPredictions);
+            }
+
+            row.push(cumulativeScore);
+        });
+
+        rows.push(row);
+    });
+
+    downloadCsv("vm_tips_bar_race.csv", rows);
 }
 
 function getMatchStatusLabel(match) {
@@ -315,8 +399,36 @@ function renderMatches() {
     tbody.innerHTML = "";
     const userPredictions = state.allPredictions[state.currentUser] || {};
 
-    state.allMatches.filter(m => m.stage === "GROUP_STAGE").forEach(match => {
+    // Uppdatera toggle-knappens text dynamiskt
+    const toggleBtn = document.getElementById("btn-toggle-stage");
+    if (toggleBtn) {
+        if (state.currentStageFilter === "GROUP_STAGE") {
+            toggleBtn.innerHTML = "Visar: 🏆 Gruppspel (Klicka för Slutspel)";
+            toggleBtn.classList.remove("playoff-mode");
+        } else {
+            toggleBtn.innerHTML = "Visar: 🔥 Slutspel (Klicka för Gruppspel)";
+            toggleBtn.classList.add("playoff-mode");
+        }
+    }
+
+    // Styr synligheten för rubrikerna Tips och Poäng baserat på läge
+    const isGroup = state.currentStageFilter === "GROUP_STAGE";
+    const thTip = document.getElementById("th-match-tip");
+    const thPts = document.getElementById("th-match-pts");
+    
+    if (thTip) thTip.style.display = isGroup ? "" : "none";
+    if (thPts) thPts.style.display = isGroup ? "" : "none";
+
+    // Sortera matcherna kronologiskt
+    const sortedMatches = [...state.allMatches].sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+    sortedMatches.forEach(match => {
         if (state.hideFinishedMatches && match.status === "FINISHED") return;
+
+        // FILTRERING
+        const isGroupStage = match.stage === "GROUP_STAGE";
+        if (state.currentStageFilter === "GROUP_STAGE" && !isGroupStage) return;
+        if (state.currentStageFilter === "PLAYOFF" && isGroupStage) return;
 
         const key = getMatchKey(match);
         const prediction = getPredictionFromKey(userPredictions, key);
@@ -336,9 +448,59 @@ function renderMatches() {
         }
 
         const date = new Date(match.utcDate);
-        // Vi separerar datum och tid i JS för full kontroll
-        const onlyDate = date.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }); // Ex: "16 juni" eller "2026-06-16"
+        const onlyDate = date.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }); 
         const onlyTime = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+
+        // Hämta lagnamn på svenska
+        let homeName = match.homeTeam && match.homeTeam.name 
+            ? (teamNamesSE[match.homeTeam.name] || match.homeTeam.name) 
+            : "Ej bestämt";
+            
+        let awayName = match.awayTeam && match.awayTeam.name 
+            ? (teamNamesSE[match.awayTeam.name] || match.awayTeam.name) 
+            : "Ej bestämt";
+        
+        // ÄNDRING: Lägg ENDAST till gruppnamnet om vi visar slutspelet (!isGroup) och matchen har en grupp i API-datan
+        if (!isGroup) {
+            const homeGroup = state.teamGroups[match.homeTeam.name];
+            const awayGroup = state.teamGroups[match.awayTeam.name];
+
+            if (homeGroup) {
+                const groupLetter = homeGroup.replace("GROUP_", "");
+                homeName += ` (${groupLetter})`;
+            }
+            if (awayGroup) {
+                const groupLetter = awayGroup.replace("GROUP_", "");
+                awayName += ` (${groupLetter})`;
+            }
+        }
+
+        // Villkorliga tabellceller för Tips och Poäng
+        const tipCellHtml = isGroup ? `<td>${prediction}</td>` : "";
+        const ptsCellHtml = isGroup ? `<td>${points}</td>` : "";
+
+        // Mappa match.stage till svensk text för slutspelsstatusen
+        let stageStatusText = "";
+        if (match.status === "FINISHED") {
+            stageStatusText = "Slut";
+        } else if (["IN_PLAY", "PAUSED", "LIVE"].includes(match.status)) {
+            stageStatusText = "Pågår";
+        } else {
+            switch(match.stage) {
+                case "LAST_16": case "ROUND_OF_16":
+                    stageStatusText = "Åttondelsfinal"; break;
+                case "QUARTER_FINALS":
+                    stageStatusText = "Kvartsfinal"; break;
+                case "SEMI_FINALS":
+                    stageStatusText = "Semifinal"; break;
+                case "THIRD_PLACE":
+                    stageStatusText = "Bronsmatch"; break;
+                case "FINAL":
+                    stageStatusText = "Final"; break;
+                default:
+                    stageStatusText = "Kommande";
+            }
+        }
 
         row.innerHTML = `
             <td class="match-meta-cell">
@@ -349,11 +511,11 @@ function renderMatches() {
                 </div>
                 ${getBroadcasterHtml(match)}
             </td>
-            <td>${teamNamesSE[match.homeTeam.name] || match.homeTeam.name} - ${teamNamesSE[match.awayTeam.name] || match.awayTeam.name}</td>
+            <td>${homeName} - ${awayName}</td>
             <td>${homeScore}-${awayScore}</td>
-            <td>${prediction}</td>
-            <td>${points}</td>
-            <td>${match.status === "FINISHED" ? "Slut" : (match.status === "IN_PLAY" || match.status === "PAUSED" || match.status === "LIVE" ? "Pågår" : "Kommande")}</td>
+            ${tipCellHtml}
+            ${ptsCellHtml}
+            <td>${stageStatusText}</td>
         `;
         tbody.appendChild(row);
     });
@@ -888,353 +1050,327 @@ function renderStats() {
     }
 } */
 
-function renderPlayoffs() {
+    function getPlaceholderName(matchNumber, side) {
+    const finalMatch = state.allMatches.find(m => m.stage === "FINAL");
+    const finalId = finalMatch ? finalMatch.matchNumber : 104;
 
-    const root = document.getElementById("playoff-bracket");
-    if (!root) return;
+    if (matchNumber === finalId) return side === "home" ? "Vinnare 101" : "Vinnare 102";
+    if (matchNumber === 101) return side === "home" ? "Vinnare 97" : "Vinnare 98";
+    if (matchNumber === 102) return side === "home" ? "Vinnare 99" : "Vinnare 100";
+    
+    if (matchNumber === 97) return side === "home" ? "Vinnare 89" : "Vinnare 90";
+    if (matchNumber === 98) return side === "home" ? "Vinnare 93" : "Vinnare 94";
+    if (matchNumber === 99) return side === "home" ? "Vinnare 91" : "Vinnare 92";
+    if (matchNumber === 100) return side === "home" ? "Vinnare 95" : "Vinnare 96";
 
-    root.innerHTML = "";
-
-    const stageOrder = [
-        "LAST_32",
-        "LAST_16",
-        "QUARTER_FINALS",
-        "SEMI_FINALS",
-        "FINAL"
-    ];
-
-    const stageTitles = {
-        LAST_32: "Sextondelsfinaler",
-        LAST_16: "Åttondelsfinaler",
-        QUARTER_FINALS: "Kvartsfinaler",
-        SEMI_FINALS: "Semifinaler",
-        FINAL: "Final"
+    // Åttondelsfinalernas invärden baserat på dina nya data
+    const r16Mapping = {
+        89: ["Vinnare 74", "Vinnare 77"],
+        90: ["Vinnare 73", "Vinnare 75"],
+        91: ["Vinnare 76", "Vinnare 78"],
+        92: ["Vinnare 79", "Vinnare 80"],
+        93: ["Vinnare 83", "Vinnare 84"],
+        94: ["Vinnare 81", "Vinnare 82"],
+        95: ["Vinnare 86", "Vinnare 88"],
+        96: ["Vinnare 85", "Vinnare 87"]
     };
 
-    const expectedCounts = {
-        LAST_32: 16,
-        LAST_16: 8,
-        QUARTER_FINALS: 4,
-        SEMI_FINALS: 2,
-        FINAL: 1
+    if (r16Mapping[matchNumber]) {
+        return side === "home" ? r16Mapping[matchNumber][0] : r16Mapping[matchNumber][1];
+    }
+
+    return "Ej klart";
+}
+
+function assignOfficialKnockoutMatchNumbers(matches) {
+    const matchNumberById = new Map([
+        [537417, 73], [537423, 76], [537415, 74], [537418, 75],
+        [537424, 78], [537416, 77], [537425, 79], [537426, 80],
+        [537422, 82], [537421, 81], [537420, 84], [537419, 83],
+        [537429, 85], [537428, 88], [537427, 86], [537430, 87],
+        [537375, 89], [537376, 90], [537377, 91], [537378, 92],
+        [537379, 93], [537380, 94], [537381, 95], [537382, 96],
+        [537383, 97], [537384, 98], [537385, 99], [537386, 100],
+        [537387, 101], [537388, 102], [537389, 103], [537390, 104]
+    ]);
+
+    const stageFallbacks = {
+        QUARTER_FINALS: [97, 98, 99, 100],
+        SEMI_FINALS: [101, 102],
+        THIRD_PLACE: [103],
+        FINAL: [104]
     };
 
-    const playoffMatches = (state.allMatches || [])
-        .filter(match => stageOrder.includes(match.stage))
-        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-
-    const grouped = {};
-
-    stageOrder.forEach(stage => grouped[stage] = []);
-
-    playoffMatches.forEach(match => {
-        grouped[match.stage].push(match);
+    matches.forEach(match => {
+        if (matchNumberById.has(match.id)) {
+            match.matchNumber = matchNumberById.get(match.id);
+        }
     });
 
-    function teamHtml(team, score) {
+    Object.entries(stageFallbacks).forEach(([stage, numbers]) => {
+        matches
+            .filter(match => match.stage === stage)
+            .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))
+            .forEach((match, index) => {
+                if (!match.matchNumber && numbers[index]) {
+                    match.matchNumber = numbers[index];
+                }
+            });
+    });
+}
 
-        const undecided =
-            !team ||
-            !team.name ||
-            /winner|runner|tbd|to be decided/i.test(team.name);
+function renderPlayoffBracket() {
+    const container = document.getElementById("bracket-container");
+    if (!container) return;
 
-        if (undecided) {
-            return `
-                <div class="team">
-                    <div class="team-left">
-                        <span class="placeholder">Ej avgjort</span>
-                    </div>
-                    <div class="team-score">-</div>
-                </div>
-            `;
-        }
+    container.innerHTML = "";
+    container.classList.add("js-bracket");
 
-        const name =
-            (typeof teamNamesSE !== "undefined" &&
-                teamNamesSE[team.name]) ||
-            team.shortName ||
-            team.name;
-
-        const crest =
-            team.crest ||
-            "https://crests.football-data.org/wm26.png";
-
-        return `
-            <div class="team">
-                <div class="team-left">
-                    <img class="flag-icon"
-                         src="${crest}"
-                         alt="${name}">
-                    <span>${name}</span>
-                </div>
-
-                <div class="team-score">
-                    ${score ?? "-"}
-                </div>
-            </div>
-        `;
-    }
-
-    function matchCard(match) {
-
-        if (!match) {
-
-            return `
-                <div class="match-card placeholder">
-
-                    <div class="match-header">
-                        TBD
-                    </div>
-
-                    ${teamHtml(null)}
-                    ${teamHtml(null)}
-
-                </div>
-            `;
-        }
-
-        const date = new Date(match.utcDate);
-
-        const day =
-            date.toLocaleDateString(
-                "sv-SE",
-                {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short"
-                });
-
-        const time =
-            date.toLocaleTimeString(
-                "sv-SE",
-                {
-                    hour: "2-digit",
-                    minute: "2-digit"
-                });
-
-        return `
-            <div class="match-card">
-
-                <div class="match-header">
-
-                    <span>${day} ${time}</span>
-
-                    <span class="tv">
-
-                        ${(match.broadcaster && match.broadcaster !== "unknown") 
-    ? match.broadcaster.toUpperCase() 
-    : "<span style='color: var(--text-muted);'>Ännu okänt</span>"}
-
-                    </span>
-
-                </div>
-
-                ${teamHtml(
-                    match.homeTeam,
-                    match.score?.fullTime?.home
-                )}
-
-                ${teamHtml(
-                    match.awayTeam,
-                    match.score?.fullTime?.away
-                )}
-
-            </div>
-        `;
-    }
-
-    function buildRound(stage) {
-
-        const round = document.createElement("div");
-        round.className = "round";
-
-        const title = document.createElement("div");
-        title.className = "round-title";
-        title.textContent = stageTitles[stage];
-
-        round.appendChild(title);
-
-        const body = document.createElement("div");
-        body.className = "round-body";
-
-        const matches = grouped[stage];
-
-        const total = expectedCounts[stage];
-
-        for (let i = 0; i < total; i++) {
-
-            const wrapper = document.createElement("div");
-
-            wrapper.className = "match-wrapper";
-
-            wrapper.innerHTML =
-                matchCard(matches[i]);
-
-            if (stage !== "FINAL") {
-
-                const connector =
-                    document.createElement("div");
-
-                connector.className =
-                    "connector";
-
-                connector.innerHTML = `
-                    <div class="connector-h"></div>
-                    <div class="connector-v"></div>
-                `;
-
-                wrapper.appendChild(connector);
-
+    if (!document.getElementById("js-bracket-style")) {
+        const style = document.createElement("style");
+        style.id = "js-bracket-style";
+        style.textContent = `
+            #bracket-container.js-bracket {
+                position: relative;
+                display: flex;
+                align-items: flex-start;
+                gap: 34px;
+                padding: 20px 30px;
+                overflow-x: auto;
             }
 
-            body.appendChild(wrapper);
+            #bracket-container.js-bracket .bracket-lines {
+                position: absolute;
+                left: 0;
+                top: 0;
+                pointer-events: none;
+                z-index: 1;
+            }
 
-        }
+            #bracket-container.js-bracket .bracket-column {
+                width: 240px;
+                min-width: 240px;
+                padding: 0;
+                position: relative;
+                flex: none;
+                z-index: 2;
+            }
 
-        round.appendChild(body);
+            #bracket-container.js-bracket .bracket-column h3 {
+                height: 32px;
+                margin-bottom: 20px;
+            }
 
-        return round;
+            #bracket-container.js-bracket .bracket-column-body {
+                position: relative;
+            }
 
+            #bracket-container.js-bracket .bracket-match-wrapper {
+                position: absolute;
+                left: 0;
+                right: 0;
+                margin: 0;
+                display: block;
+                flex: none;
+            }
+
+            #bracket-container.js-bracket .bracket-match-card {
+                width: 210px;
+                margin: 0 auto;
+            }
+
+            #bracket-container.js-bracket .bracket-match-wrapper::before,
+            #bracket-container.js-bracket .bracket-match-card::after {
+                display: none !important;
+                content: none !important;
+            }
+
+            #bracket-container.js-bracket .bracket-team-row.winner {
+                background: var(--success-bg, #d4edda);
+                color: var(--success-text, #155724);
+                border-radius: 4px;
+                font-weight: 700;
+            }
+
+            #bracket-container.js-bracket .bracket-team-row.winner .bracket-team-score {
+                color: var(--success-text, #155724);
+            }
+        `;
+        document.head.appendChild(style);
     }
 
-    stageOrder.forEach(stage => {
+    const cardHeight = 106;
+    const rowGap = 16;
+    const rowStep = cardHeight + rowGap;
 
-        root.appendChild(
-            buildRound(stage)
-        );
-
-    });
-    // ==========================================
-    // Justera vertikalt avstånd mellan rundorna
-    // ==========================================
-
-    requestAnimationFrame(() => {
-
-        const rounds = [...root.querySelectorAll(".round")];
-
-        for (let r = 1; r < rounds.length; r++) {
-
-            const previousCards =
-                [...rounds[r - 1].querySelectorAll(".match-wrapper")];
-
-            const currentCards =
-                [...rounds[r].querySelectorAll(".match-wrapper")];
-
-            currentCards.forEach((card, index) => {
-
-                const first =
-                    previousCards[index * 2];
-
-                const second =
-                    previousCards[index * 2 + 1];
-
-                if (!first || !second) return;
-
-                const y1 =
-                    first.offsetTop +
-                    first.offsetHeight / 2;
-
-                const y2 =
-                    second.offsetTop +
-                    second.offsetHeight / 2;
-
-                const target =
-                    (y1 + y2) / 2;
-
-                const current =
-                    card.offsetTop +
-                    card.offsetHeight / 2;
-
-                const delta =
-                    target - current;
-
-                card.style.marginTop =
-                    `${delta}px`;
-
-            });
-
+    const rounds = [
+        {
+            stageKey: "LAST_32",
+            title: "16-delsfinal",
+            matchOrder: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87]
+        },
+        {
+            stageKey: "LAST_16",
+            title: "Åttondelsfinal",
+            matchOrder: [89, 90, 93, 94, 91, 92, 95, 96],
+            sources: { 89: [74, 77], 90: [73, 75], 93: [83, 84], 94: [81, 82], 91: [76, 78], 92: [79, 80], 95: [86, 88], 96: [85, 87] }
+        },
+        {
+            stageKey: "QUARTER_FINALS",
+            title: "Kvartsfinal",
+            matchOrder: [97, 98, 99, 100],
+            sources: { 97: [89, 90], 98: [93, 94], 99: [91, 92], 100: [95, 96] }
+        },
+        {
+            stageKey: "SEMI_FINALS",
+            title: "Semifinal",
+            matchOrder: [101, 102],
+            sources: { 101: [97, 98], 102: [99, 100] }
+        },
+        {
+            stageKey: "FINAL",
+            title: "Final",
+            matchOrder: [104],
+            sources: { 104: [101, 102] }
         }
+    ];
 
-        // ======================================
-        // Rita connectorerna
-        // ======================================
+    const positions = new Map();
 
-        const allRounds =
-            [...root.querySelectorAll(".round")];
+    rounds[0].matchOrder.forEach((matchNumber, index) => {
+        positions.set(matchNumber, index * rowStep);
+    });
 
-        allRounds.forEach((round, roundIndex) => {
+    rounds.slice(1).forEach(round => {
+        round.matchOrder.forEach(matchNumber => {
+            const sourceNumbers = round.sources[matchNumber];
+            const sourceCenters = sourceNumbers.map(number => positions.get(number) + cardHeight / 2);
+            const center = sourceCenters.reduce((sum, value) => sum + value, 0) / sourceCenters.length;
+            positions.set(matchNumber, center - cardHeight / 2);
+        });
+    });
 
-            if (roundIndex === allRounds.length - 1)
-                return;
+    const bodyHeight = rounds[0].matchOrder.length * cardHeight + (rounds[0].matchOrder.length - 1) * rowGap;
+    const cardByMatchNumber = new Map();
 
-            const wrappers =
-                [...round.querySelectorAll(".match-wrapper")];
+    rounds.forEach(round => {
+        const roundColumn = document.createElement("div");
+        roundColumn.className = "bracket-column";
 
-            wrappers.forEach((wrapper, index) => {
+        const roundTitle = document.createElement("h3");
+        roundTitle.innerText = round.title;
+        roundColumn.appendChild(roundTitle);
 
-                const connector =
-                    wrapper.querySelector(".connector");
+        const roundBody = document.createElement("div");
+        roundBody.className = "bracket-column-body";
+        roundBody.style.height = `${bodyHeight}px`;
 
-                if (!connector)
-                    return;
+        round.matchOrder.forEach(matchNumber => {
+            const match = state.allMatches.find(m => m.matchNumber === matchNumber);
 
-                const nextRound =
-                    allRounds[roundIndex + 1];
+            const wrapper = document.createElement("div");
+            wrapper.className = "bracket-match-wrapper";
+            wrapper.style.top = `${positions.get(matchNumber)}px`;
 
-                const nextCards =
-                    [...nextRound.querySelectorAll(".match-wrapper")];
+            const matchCard = document.createElement("div");
+            matchCard.className = "bracket-match-card";
+            matchCard.dataset.matchNumber = matchNumber;
 
-                const next =
-                    nextCards[Math.floor(index / 2)];
+            if (match && (match.status === "LIVE" || match.status === "IN_PLAY")) {
+                matchCard.classList.add("live-match");
+            }
 
-                if (!next)
-                    return;
+            const homeName = match?.homeTeam?.name
+                ? (teamNamesSE[match.homeTeam.name] || match.homeTeam.name)
+                : getPlaceholderName(matchNumber, "home");
 
-                const yCurrent =
-                    wrapper.offsetTop +
-                    wrapper.offsetHeight / 2;
+            const awayName = match?.awayTeam?.name
+                ? (teamNamesSE[match.awayTeam.name] || match.awayTeam.name)
+                : getPlaceholderName(matchNumber, "away");
 
-                const yNext =
-                    next.offsetTop +
-                    next.offsetHeight / 2;
+            const homeScoreValue = match?.score?.fullTime?.home;
+            const awayScoreValue = match?.score?.fullTime?.away;
+            const homeScore = homeScoreValue ?? "-";
+            const awayScore = awayScoreValue ?? "-";
+            const hasFinishedScore = match?.status === "FINISHED" && homeScoreValue !== null && homeScoreValue !== undefined && awayScoreValue !== null && awayScoreValue !== undefined;
+            const homeWinnerClass = hasFinishedScore && homeScoreValue > awayScoreValue ? " winner" : "";
+            const awayWinnerClass = hasFinishedScore && awayScoreValue > homeScoreValue ? " winner" : "";
 
-                const vertical =
-                    connector.querySelector(".connector-v");
+            const timeStr = match?.utcDate
+                ? new Date(match.utcDate).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }) + " " +
+                  new Date(match.utcDate).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })
+                : "TBD";
 
-                const diff =
-                    yNext - yCurrent;
+            let broadcasterHtml = `<span class="bracket-tv-channel undecided" style="font-size:0.75rem; font-style:italic; color:var(--text-muted)">Ej bestämt</span>`;
+            if (match?.broadcaster) {
+                const bc = match.broadcaster.toLowerCase();
+                if (bc === "svt") broadcasterHtml = `<img src="svt.png" class="tv-logo" alt="SVT" style="height: 14px; vertical-align: middle;">`;
+                else if (bc === "tv4") broadcasterHtml = `<img src="tv4.png" class="tv-logo" alt="TV4" style="height: 14px; vertical-align: middle;">`;
+                else broadcasterHtml = `<span class="bracket-tv-channel" style="font-size:0.75rem; font-weight:bold;">${match.broadcaster.toUpperCase()}</span>`;
+            }
 
-                vertical.style.height =
-                    `${Math.abs(diff)}px`;
+            matchCard.innerHTML = `
+                <div class="bracket-match-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span class="bracket-match-time" style="font-size:0.8rem; color:var(--text-muted);">${timeStr}</span>
+                    <div class="bracket-broadcaster">${broadcasterHtml}</div>
+                </div>
+                <div class="bracket-team-row${homeWinnerClass}">
+                    <span class="bracket-team-name ${!match?.homeTeam?.name ? "placeholder" : ""}">${homeName}</span>
+                    <span class="bracket-team-score">${homeScore}</span>
+                </div>
+                <div class="bracket-team-row${awayWinnerClass}">
+                    <span class="bracket-team-name ${!match?.awayTeam?.name ? "placeholder" : ""}">${awayName}</span>
+                    <span class="bracket-team-score">${awayScore}</span>
+                </div>
+            `;
 
-                if (diff >= 0) {
-
-                    vertical.style.top = "50%";
-                    vertical.style.bottom = "auto";
-
-                } else {
-
-                    vertical.style.bottom = "50%";
-                    vertical.style.top = "auto";
-
-                }
-
-                connector.classList.toggle(
-                    "down",
-                    diff > 0
-                );
-
-                connector.classList.toggle(
-                    "up",
-                    diff < 0
-                );
-
-            });
-
+            wrapper.appendChild(matchCard);
+            roundBody.appendChild(wrapper);
+            cardByMatchNumber.set(matchNumber, matchCard);
         });
 
+        roundColumn.appendChild(roundBody);
+        container.appendChild(roundColumn);
     });
 
+    requestAnimationFrame(() => {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("bracket-lines");
+        svg.setAttribute("width", container.scrollWidth);
+        svg.setAttribute("height", container.scrollHeight);
+
+        const containerRect = container.getBoundingClientRect();
+
+        rounds.slice(1).forEach(round => {
+            round.matchOrder.forEach(targetNumber => {
+                const targetCard = cardByMatchNumber.get(targetNumber);
+                if (!targetCard) return;
+
+                round.sources[targetNumber].forEach(sourceNumber => {
+                    const sourceCard = cardByMatchNumber.get(sourceNumber);
+                    if (!sourceCard) return;
+
+                    const sourceRect = sourceCard.getBoundingClientRect();
+                    const targetRect = targetCard.getBoundingClientRect();
+
+                    const x1 = sourceRect.right - containerRect.left + container.scrollLeft;
+                    const y1 = sourceRect.top + sourceRect.height / 2 - containerRect.top + container.scrollTop;
+                    const x2 = targetRect.left - containerRect.left + container.scrollLeft;
+                    const y2 = targetRect.top + targetRect.height / 2 - containerRect.top + container.scrollTop;
+                    const midX = x1 + (x2 - x1) / 2;
+
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`);
+                    path.setAttribute("fill", "none");
+                    path.setAttribute("stroke", "var(--bracket-dark-border, #393e46)");
+                    path.setAttribute("stroke-width", "2");
+                    svg.appendChild(path);
+                });
+            });
+        });
+
+        container.prepend(svg);
+    });
 }
 
 // Hjälpfunktion för att veta hur många placeholders som behövs om API:et saknar framtida rundor
@@ -1280,7 +1416,7 @@ function setupTabs() {
                 fullWidth ? container.classList.add("full-width") : container.classList.remove("full-width");
             }
 
-            // --- NYTT: NOLLSTÄLL SIMULERINGEN OM MAN LÄMNAR TABELLEN ---
+            // --- NOLLSTÄLL SIMULERINGEN OM MAN LÄMNAR TABELLEN ---
             if (btnId !== "btn-ranking") {
                 state.simulationResult = null;
                 const simInput = document.getElementById("simulation-input");
@@ -1288,24 +1424,26 @@ function setupTabs() {
             }
             // -----------------------------------------------------------
 
-            // --- HÄR ÄR ÄNDRINGEN FÖR ATT DÖLJA/VISA FILTER-KNAPPEN ---
+            // --- FILTER-KNAPPEN (DÖLJA/VISA PÅ RÄTT FLIKAR) ---
             const filterElement = document.getElementById("hide-finished-checkbox");
             const filterContainer = filterElement ? filterElement.parentElement : null;
             
             if (filterContainer) {
-                if (btnId === "btn-ranking") {
-                    filterContainer.style.display = "none";  // Dölj i tabellfliken
+                // Dölj även filter-checkboxen i slutspelsträdet för att inte bryta strukturen
+                if (btnId === "btn-ranking" || btnId === "btn-playoffs") {
+                    filterContainer.style.display = "none";  
                 } else {
                     filterContainer.style.display = "block"; // Visa i matcher och matris
                 }
             }
             // --------------------------------------------------------
 
+            if (btnId === "btn-matches") renderMatches();
             if (btnId === "btn-ranking") renderRanking();
             if (btnId === "btn-matrix") renderMatrix();
             if (btnId === "btn-trend") renderTrendChart();
             if (btnId === "btn-stats") renderStats();
-            if (btnId === "btn-playoffs") renderPlayoffs();
+            if (btnId === "btn-playoffs") renderPlayoffBracket(); // ÄNDRAD: Kör nu din nya träd-funktion
         });
     });
 
@@ -1315,10 +1453,27 @@ function setupTabs() {
 
 async function updateApiData() {
     try {
-        // Hämta färsk matchdata med en timestamp för att förhindra cache
         const respM = await fetch(API_URL + "?t=" + Date.now());
         const data = await respM.json();
+        
+        // --- NY KOD: Tilldela officiella matchnummer kronologiskt ---
+        // Eftersom API:et oftast saknar 'matchNumber', bygger vi dem själva
+        // baserat på avsparkstid, vilket matchar FIFAs officiella schema för VM 2026.
+        
+        const stages = [
+            { key: "LAST_32", start: 73 },
+            { key: "LAST_16", start: 89 },
+            { key: "ROUND_OF_16", start: 89 }, // Gardering för olika API-namn
+            { key: "QUARTER_FINALS", start: 97 },
+            { key: "SEMI_FINALS", start: 101 },
+            { key: "FINAL", start: 104 }
+        ];
+
+        assignOfficialKnockoutMatchNumbers(data.matches);
+        // -------------------------------------------------------------
+
         state.allMatches = data.matches;
+        buildTeamGroupMapping();
 
         // Uppdatera klockslaget för senaste uppdateringen
         const now = new Date();
@@ -1334,6 +1489,8 @@ async function updateApiData() {
         if (!document.getElementById("view-ranking").classList.contains("hidden")) renderRanking();
         if (!document.getElementById("view-trend").classList.contains("hidden")) renderTrendChart();
         if (!document.getElementById("view-stats").classList.contains("hidden")) renderStats();
+        if (!document.getElementById("view-playoffs").classList.contains("hidden")) renderPlayoffBracket();
+        
     } catch (error) {
         console.error("Kunde inte hämta live-data från API:", error);
     }
@@ -1426,6 +1583,112 @@ async function start() {
             alert("Ange resultatet i formatet hemmamål-bortamål, t.ex. '2-1'");
         }
     }
+
+    const toggleBtn = document.getElementById("btn-toggle-stage");
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+            // Växla värdet till motsatsen
+            if (state.currentStageFilter === "GROUP_STAGE") {
+                state.currentStageFilter = "PLAYOFF";
+            } else {
+                state.currentStageFilter = "GROUP_STAGE";
+            }
+            
+            // Spara valet och rendera om
+            localStorage.setItem("selectedStageFilter", state.currentStageFilter);
+            renderMatches();
+        });
+    }
+
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+    // 1. Hämta alla färdigspelade matcher i kronologisk ordning
+    const playedMatches = state.allMatches
+        .filter(m => m.status === 'FINISHED') // Justera om du har en annan status för avslutade
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (playedMatches.length === 0) {
+        alert("Inga spelade matcher hittades att exportera.");
+        return;
+    }
+
+    // 2. Bygg rubrikraden (Kolumn 1 är Deltagare, sedan match för match)
+    const headerRow = ["Deltagare"];
+    playedMatches.forEach((match, index) => {
+        // Skapar rubriker som "Match 1 (BRA-NOR)"
+        headerRow.push(`Match ${index + 1} (${match.homeTeam}-${match.awayTeam})`);
+    });
+
+    // csvContent är strängen vi bygger upp, rad för rad
+    let csvContent = headerRow.join(",") + "\n";
+
+    // 3. Iterera genom alla deltagare
+    const participants = Object.keys(state.allPredictions);
+
+    participants.forEach(name => {
+        let row = [name];
+        let cumulativeScore = 0;
+
+        playedMatches.forEach(match => {
+            let pointsEarned = 0;
+
+            // HÄR: Anropa din riktiga funktion för poängberäkning
+            if (state.allPredictions[name] && state.allPredictions[name][match.id]) {
+                // Exempel: Byt ut calculateMatchScore mot din faktiska poäng-funktion
+                // pointsEarned = calculateMatchScore(state.allPredictions[name][match.id], match);
+            }
+
+            cumulativeScore += pointsEarned;
+            row.push(cumulativeScore);
+        });
+
+        // Lägg till raden i CSV-strängen
+        csvContent += row.join(",") + "\n";
+    });
+
+    // 4. Skapa filen och trigga nedladdning i webbläsaren
+    // Lägger till BOM (\uFEFF) för att Excel ska förstå åäö korrekt
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "vm_tips_poangutveckling.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+    const exportCsvBtn = document.getElementById("btn-export-csv");
+    if (exportCsvBtn) {
+        const cleanExportCsvBtn = exportCsvBtn.cloneNode(true);
+        exportCsvBtn.replaceWith(cleanExportCsvBtn);
+        cleanExportCsvBtn.addEventListener("click", exportRankingCsv);
+    }
+
+    // --- Flourish Modal Logik ---
+const btnFlourish = document.getElementById('btn-flourish-modal');
+const flourishModal = document.getElementById('flourish-modal');
+const closeFlourishBtn = document.getElementById('close-flourish-modal');
+
+if (btnFlourish && flourishModal && closeFlourishBtn) {
+    // Öppna modalen
+    btnFlourish.addEventListener('click', () => {
+        flourishModal.classList.remove('hidden');
+    });
+
+    // Stäng på krysset
+    closeFlourishBtn.addEventListener('click', () => {
+        flourishModal.classList.add('hidden');
+    });
+
+    // Stäng om man klickar i den mörka bakgrunden utanför den vita boxen
+    flourishModal.addEventListener('click', (e) => {
+        if (e.target === flourishModal) {
+            flourishModal.classList.add('hidden');
+        }
+    });
+}
+
 
     // Kör första hämtningen direkt vid start
     await updateApiData();
